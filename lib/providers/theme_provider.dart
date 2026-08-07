@@ -8,11 +8,13 @@ enum GameThemeMode {
 
 class ThemeProvider extends ChangeNotifier {
   GameThemeMode _currentMode = GameThemeMode.dark;
-  double _fontSize = 20.0; // Default sizing slightly larger for better readability
+  double _fontSize = 20.0;
+  String _fontFamily = 'monospace'; // 'monospace', 'sans-serif', 'serif'
 
   GameThemeMode get currentMode => _currentMode;
   bool get isDark => _currentMode == GameThemeMode.dark;
   double get fontSize => _fontSize;
+  String get fontFamily => _fontFamily;
 
   void setThemeMode(GameThemeMode mode) {
     _currentMode = mode;
@@ -29,8 +31,13 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFontFamily(String family) {
+    _fontFamily = family;
+    notifyListeners();
+  }
+
   Color get backgroundColor {
-    return isDark ? const Color(0xFF161C24) : const Color(0xFFF8FAFC); // Slate-gray space background
+    return isDark ? const Color(0xFF161C24) : const Color(0xFFF8FAFC);
   }
 
   Gradient get backgroundGradient {
@@ -60,7 +67,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Color get accentColor {
-    return const Color(0xFFE040FB); // Bright Magenta/Pink cursor
+    return const Color(0xFFE040FB); // Bright Magenta/Pink
   }
 
   Color get correctCharColor {
@@ -85,19 +92,28 @@ class ThemeProvider extends ChangeNotifier {
 
   TextStyle getMonospaceTextStyle({double? fontSize, FontWeight fontWeight = FontWeight.normal}) {
     final useSize = fontSize ?? _fontSize;
-    return isDark
-        ? GoogleFonts.shareTechMono(
-            fontSize: useSize,
-            fontWeight: fontWeight,
-            color: textColor,
-            letterSpacing: 1.2,
-          )
-        : GoogleFonts.firaCode(
-            fontSize: useSize,
-            fontWeight: fontWeight,
-            color: textColor,
-            letterSpacing: 0.8,
-          );
+    if (_fontFamily == 'sans-serif') {
+      return GoogleFonts.outfit(
+        fontSize: useSize,
+        fontWeight: fontWeight,
+        color: textColor,
+        letterSpacing: 0.5,
+      );
+    } else if (_fontFamily == 'serif') {
+      return GoogleFonts.merriweather(
+        fontSize: useSize,
+        fontWeight: fontWeight,
+        color: textColor,
+        letterSpacing: 0.5,
+      );
+    } else {
+      return GoogleFonts.shareTechMono(
+        fontSize: useSize,
+        fontWeight: fontWeight,
+        color: textColor,
+        letterSpacing: 1.2,
+      );
+    }
   }
 
   TextStyle getHeadingStyle({double fontSize = 24.0, FontWeight fontWeight = FontWeight.bold}) {

@@ -35,6 +35,7 @@ class GameState extends ChangeNotifier {
   Timer? _timer;
   final List<double> _wpmHistory = [];
   bool _isSoundEnabled = true;
+  double _soundVolume = 1.0; // Range: 0.0 to 1.0
 
   // Audio players for sound effects
   final AudioPlayer _clickPlayer = AudioPlayer();
@@ -59,6 +60,7 @@ class GameState extends ChangeNotifier {
   int get elapsedTimeSec => _elapsedTimeSec;
   List<double> get wpmHistory => _wpmHistory;
   bool get isSoundEnabled => _isSoundEnabled;
+  double get soundVolume => _soundVolume;
   String? get lastPressedKey => _lastPressedKey;
 
   // Word Corpora
@@ -98,12 +100,15 @@ class GameState extends ChangeNotifier {
     try {
       if (type == 'click') {
         _clickPlayer.stop();
+        _clickPlayer.setVolume(_soundVolume);
         _clickPlayer.play(AssetSource('sounds/click.wav'));
       } else if (type == 'error') {
         _errorPlayer.stop();
+        _errorPlayer.setVolume(_soundVolume);
         _errorPlayer.play(AssetSource('sounds/error.wav'));
       } else if (type == 'success') {
         _successPlayer.stop();
+        _successPlayer.setVolume(_soundVolume);
         _successPlayer.play(AssetSource('sounds/success.wav'));
       }
     } catch (e) {
@@ -146,6 +151,22 @@ class GameState extends ChangeNotifier {
 
   void toggleSound() {
     _isSoundEnabled = !_isSoundEnabled;
+    notifyListeners();
+  }
+
+  void setSoundVolume(double vol) {
+    _soundVolume = vol.clamp(0.0, 1.0);
+    notifyListeners();
+  }
+
+  void resetStatistics() {
+    _wpmHistory.clear();
+    _elapsedTimeSec = 0;
+    _correctKeys = 0;
+    _incorrectKeys = 0;
+    _isPlaying = false;
+    _isFinished = false;
+    _typedText = '';
     notifyListeners();
   }
 
