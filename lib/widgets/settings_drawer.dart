@@ -53,7 +53,6 @@ class SettingsDrawer extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.all(20.0),
                   children: [
-
                     // Audio Switcher
                     _buildSectionHeader(context, 'AUDIO EFFECTS'),
                     const SizedBox(height: 12),
@@ -132,65 +131,7 @@ class SettingsDrawer extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Training Mode selector
-                    _buildSectionHeader(context, 'TRAINING MODE'),
-                    const SizedBox(height: 12),
-                    _buildSelectionDropdown<GameMode>(
-                      context,
-                      value: gameState.mode,
-                      items: GameMode.values,
-                      labelBuilder: (m) => m == GameMode.timeAttack
-                          ? 'Time Attack'
-                          : m == GameMode.wordLimit
-                              ? 'Word Limit'
-                              : 'Sudden Death',
-                      onChanged: (val) {
-                        if (val != null) gameState.setMode(val);
-                      },
-                    ),
-
-                    // Mode Params
-                    if (gameState.mode == GameMode.timeAttack) ...[
-                      const SizedBox(height: 16),
-                      _buildSliderSelector(
-                        context,
-                        'Time limit (seconds)',
-                        [15, 30, 60, 120],
-                        gameState.timeLimitSec,
-                        (v) => gameState.setTimeLimit(v),
-                      ),
-                    ] else if (gameState.mode == GameMode.wordLimit) ...[
-                      const SizedBox(height: 16),
-                      _buildSliderSelector(
-                        context,
-                        'Words count',
-                        [10, 25, 50, 100],
-                        gameState.wordLimitCount,
-                        (v) => gameState.setWordLimit(v),
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-
-                    // Difficulty selector
-                    _buildSectionHeader(context, 'DIFFICULTY'),
-                    const SizedBox(height: 12),
-                    _buildSelectionDropdown<GameDifficulty>(
-                      context,
-                      value: gameState.difficulty,
-                      items: GameDifficulty.values,
-                      labelBuilder: (d) => d == GameDifficulty.easy
-                          ? 'Easy Common Words'
-                          : d == GameDifficulty.medium
-                              ? 'Medium Standard'
-                              : d == GameDifficulty.hard
-                                  ? 'Hard Vocabulary'
-                                  : 'Developer Snippets (Code)',
-                      onChanged: (val) {
-                        if (val != null) gameState.setDifficulty(val);
-                      },
-                    ),
-                    const SizedBox(height: 24),
+                    // App Update
                     _buildSectionHeader(context, 'APP UPDATE'),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
@@ -201,7 +142,7 @@ class SettingsDrawer extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () async {
-                        final Uri url = Uri.parse('https://github.com/humza/ittypes/releases'); // Point to the repo releases
+                        final Uri url = Uri.parse('https://github.com/humza/ittypes/releases');
                         if (await canLaunchUrl(url)) {
                           await launchUrl(url, mode: LaunchMode.externalApplication);
                         } else {
@@ -240,86 +181,6 @@ class SettingsDrawer extends StatelessWidget {
               letterSpacing: 0.8,
             ),
       ),
-    );
-  }
-
-  Widget _buildSelectionDropdown<T>(
-    BuildContext context, {
-    required T value,
-    required List<T> items,
-    required String Function(T) labelBuilder,
-    required ValueChanged<T?> onChanged,
-  }) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: themeProvider.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: themeProvider.borderColor),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          dropdownColor: themeProvider.backgroundColor,
-          style: themeProvider.getHeadingStyle(fontSize: 14, fontWeight: FontWeight.normal),
-          icon: Icon(Icons.arrow_drop_down, color: themeProvider.textColor),
-          isExpanded: true,
-          items: items.map((val) {
-            return DropdownMenuItem<T>(
-              value: val,
-              child: Text(labelBuilder(val)),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSliderSelector(
-    BuildContext context,
-    String label,
-    List<int> options,
-    int activeValue,
-    Function(int) onSelect,
-  ) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(color: themeProvider.subtextColor),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: options.map((val) {
-            final isSelected = val == activeValue;
-            return ChoiceChip(
-              label: Text(
-                '$val',
-                style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
-                      color: isSelected
-                          ? (themeProvider.isDark ? Colors.black87 : Colors.white)
-                          : themeProvider.textColor,
-                    ),
-              ),
-              selected: isSelected,
-              selectedColor: themeProvider.accentColor,
-              backgroundColor: themeProvider.cardColor,
-              onSelected: (selected) {
-                if (selected) {
-                  onSelect(val);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ],
     );
   }
 }

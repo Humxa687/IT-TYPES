@@ -37,6 +37,16 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
+  void _cycleMode(GameState state) {
+    final nextIndex = (state.mode.index + 1) % GameMode.values.length;
+    state.setMode(GameMode.values[nextIndex]);
+  }
+
+  void _cycleDifficulty(GameState state) {
+    final nextIndex = (state.difficulty.index + 1) % GameDifficulty.values.length;
+    state.setDifficulty(GameDifficulty.values[nextIndex]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameState = Provider.of<GameState>(context);
@@ -138,43 +148,80 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                           ),
                           const SizedBox(height: 32),
 
-                          // Quick config stats preview
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: themeProvider.backgroundColor.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _quickStatTile(
-                                  context,
-                                  'MODE',
-                                  gameState.mode == GameMode.timeAttack
-                                      ? 'Time Attack'
-                                      : gameState.mode == GameMode.wordLimit
-                                          ? 'Word Limit'
-                                          : 'Sudden Death',
-                                ),
-                                Container(width: 1.5, height: 28, color: themeProvider.borderColor),
-                                _quickStatTile(
-                                  context,
-                                  'DIFFICULTY',
-                                  gameState.difficulty == GameDifficulty.easy
-                                      ? 'Easy'
-                                      : gameState.difficulty == GameDifficulty.medium
-                                          ? 'Medium'
-                                          : gameState.difficulty == GameDifficulty.hard
-                                              ? 'Hard'
-                                              : 'Code',
-                                ),
-                              ],
+                          // Quick config stats preview card (Clickable!)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: themeProvider.backgroundColor.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: themeProvider.borderColor.withOpacity(0.8), width: 1.2),
+                              ),
+                              child: Row(
+                                children: [
+                                  // Clickable Mode
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => _cycleMode(gameState),
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: _quickStatTile(
+                                        context,
+                                        'MODE',
+                                        gameState.mode == GameMode.timeAttack
+                                            ? 'Time Attack'
+                                            : gameState.mode == GameMode.wordLimit
+                                                ? 'Word Limit'
+                                                : 'Sudden Death',
+                                      ),
+                                    ),
+                                  ),
+                                  Container(width: 1.5, height: 32, color: themeProvider.borderColor.withOpacity(0.6)),
+                                  // Clickable Difficulty
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => _cycleDifficulty(gameState),
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: _quickStatTile(
+                                        context,
+                                        'DIFFICULTY',
+                                        gameState.difficulty == GameDifficulty.easy
+                                            ? 'Easy'
+                                            : gameState.difficulty == GameDifficulty.medium
+                                                ? 'Medium'
+                                                : gameState.difficulty == GameDifficulty.hard
+                                                    ? 'Hard'
+                                                    : 'Code',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                          
+                          // Inline parameter controllers
+                          if (gameState.mode == GameMode.timeAttack) ...[
+                            const SizedBox(height: 24),
+                            _buildSliderSelector(
+                              context,
+                              'TIME LIMIT',
+                              [15, 30, 60, 120],
+                              gameState.timeLimitSec,
+                              (v) => gameState.setTimeLimit(v),
+                            ),
+                          ] else if (gameState.mode == GameMode.wordLimit) ...[
+                            const SizedBox(height: 24),
+                            _buildSliderSelector(
+                              context,
+                              'WORD COUNT',
+                              [10, 25, 50, 100],
+                              gameState.wordLimitCount,
+                              (v) => gameState.setWordLimit(v),
+                            ),
+                          ],
 
-                          const SizedBox(height: 36),
+                          const SizedBox(height: 32),
 
                           // Animated Scale launcher button
                           MouseRegion(
@@ -244,16 +291,67 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
 
   Widget _quickStatTile(BuildContext context, String label, String val) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(color: themeProvider.subtextColor),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            val.toUpperCase(),
+            style: themeProvider.getHeadingStyle(fontSize: 14, fontWeight: FontWeight.bold).copyWith(
+                  color: themeProvider.textColor,
+                  letterSpacing: 0.5,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliderSelector(
+    BuildContext context,
+    String label,
+    List<int> options,
+    int activeValue,
+    Function(int) onSelect,
+  ) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(color: themeProvider.subtextColor),
+          style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(color: themeProvider.subtextColor),
         ),
-        const SizedBox(height: 4),
-        Text(
-          val.toUpperCase(),
-          style: themeProvider.getHeadingStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: options.map((val) {
+            final isSelected = val == activeValue;
+            return ChoiceChip(
+              label: Text(
+                '$val',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
+                      color: isSelected
+                          ? (themeProvider.isDark ? Colors.black87 : Colors.white)
+                          : themeProvider.textColor,
+                    ),
+              ),
+              selected: isSelected,
+              selectedColor: themeProvider.accentColor,
+              backgroundColor: themeProvider.cardColor,
+              onSelected: (selected) {
+                if (selected) {
+                  onSelect(val);
+                }
+              },
+            );
+          }).toList(),
         ),
       ],
     );
