@@ -12,39 +12,71 @@ class StartScreen extends StatefulWidget {
   State<StartScreen> createState() => _StartScreenState();
 }
 
-class _StartScreenState extends State<StartScreen> with SingleTickerProviderStateMixin {
+class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late AnimationController _animController;
-  late Animation<double> _glowAnimation;
-  bool _isHovered = false;
+  late AnimationController _logoAnimController;
+  late Animation<double> _logoGlowAnimation;
+  
+  // Hover & Active animation configurations
+  bool _isEnterHovered = false;
+  double _difficultyScale = 1.0;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
+    _logoAnimController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    _glowAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    _logoGlowAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _logoAnimController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _logoAnimController.dispose();
     super.dispose();
   }
 
-  void _cycleMode(GameState state) {
-    final nextIndex = (state.mode.index + 1) % GameMode.values.length;
-    state.setMode(GameMode.values[nextIndex]);
-  }
-
   void _cycleDifficulty(GameState state) {
+    setState(() {
+      _difficultyScale = 0.9;
+    });
+    
+    // Cycle difficulty values
     final nextIndex = (state.difficulty.index + 1) % GameDifficulty.values.length;
     state.setDifficulty(GameDifficulty.values[nextIndex]);
+    
+    // Animate scale rebound
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          _difficultyScale = 1.05;
+        });
+        Future.delayed(const Duration(milliseconds: 80), () {
+          if (mounted) {
+            setState(() {
+              _difficultyScale = 1.0;
+            });
+          }
+        });
+      }
+    });
+  }
+
+  IconData _getDifficultyIcon(GameDifficulty diff) {
+    switch (diff) {
+      case GameDifficulty.easy:
+        return Icons.child_care_rounded;
+      case GameDifficulty.medium:
+        return Icons.keyboard_alt_outlined;
+      case GameDifficulty.hard:
+        return Icons.psychology_rounded;
+      case GameDifficulty.code:
+        return Icons.code_rounded;
+    }
   }
 
   @override
@@ -64,11 +96,10 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
             children: [
               // Top Quick Actions bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Moon / Sun Theme switcher
                     IconButton(
                       icon: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
@@ -76,14 +107,13 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                           themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
                           key: ValueKey<bool>(themeProvider.isDark),
                           color: themeProvider.textColor,
-                          size: 24,
+                          size: 22,
                         ),
                       ),
                       onPressed: () => themeProvider.toggleTheme(),
                     ),
-                    // Settings Drawer Trigger
                     IconButton(
-                      icon: Icon(Icons.settings_outlined, color: themeProvider.textColor, size: 24),
+                      icon: Icon(Icons.settings_outlined, color: themeProvider.textColor, size: 22),
                       onPressed: () {
                         _scaffoldKey.currentState?.openEndDrawer();
                       },
@@ -92,32 +122,32 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                 ),
               ),
 
-              // Main welcome contents
+              // Main welcome content container
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24.0),
                     child: Container(
-                      constraints: const BoxConstraints(maxWidth: 550),
-                      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 30),
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
                       decoration: BoxDecoration(
                         color: themeProvider.cardColor,
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(color: themeProvider.borderColor, width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: themeProvider.accentColor.withOpacity(0.08),
+                            color: themeProvider.accentColor.withOpacity(0.06),
                             blurRadius: 30,
-                            offset: const Offset(0, 10),
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Floating animated logo
+                          // Breathing Vector Logo
                           ScaleTransition(
-                            scale: _glowAnimation,
+                            scale: _logoGlowAnimation,
                             child: Container(
                               padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
@@ -126,107 +156,44 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                               ),
                               child: Icon(
                                 Icons.keyboard_double_arrow_right_rounded,
-                                size: 48,
+                                size: 44,
                                 color: themeProvider.accentColor,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
                           Text(
                             'IT TYPES',
-                            style: themeProvider.getHeadingStyle(fontSize: 34, fontWeight: FontWeight.bold).copyWith(
+                            style: themeProvider.getHeadingStyle(fontSize: 32, fontWeight: FontWeight.bold).copyWith(
                                   letterSpacing: 2.0,
                                 ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             'Elevated Typing Experience',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 13).copyWith(
+                            style: themeProvider.getMonospaceTextStyle(fontSize: 12).copyWith(
                                   color: themeProvider.subtextColor,
                                   letterSpacing: 0.8,
                                 ),
                           ),
+                          const SizedBox(height: 28),
+
+                          // Monkeytype-style mode selection ribbon (Side-by-side)
+                          _buildModeRibbon(context, gameState),
+                          const SizedBox(height: 16),
+
+                          // Dynamic Inline Parameter Selector (Time Attack / Word Limit options)
+                          _buildParameterSelector(context, gameState),
+                          const SizedBox(height: 24),
+
+                          // Animated Difficulty Card
+                          _buildDifficultyCard(context, gameState),
                           const SizedBox(height: 32),
 
-                          // Quick config stats preview card (Clickable!)
-                          InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: themeProvider.backgroundColor.withOpacity(0.4),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: themeProvider.borderColor.withOpacity(0.8), width: 1.2),
-                              ),
-                              child: Row(
-                                children: [
-                                  // Clickable Mode
-                                  Expanded(
-                                    child: InkWell(
-                                      onTap: () => _cycleMode(gameState),
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: _quickStatTile(
-                                        context,
-                                        'MODE',
-                                        gameState.mode == GameMode.timeAttack
-                                            ? 'Time Attack'
-                                            : gameState.mode == GameMode.wordLimit
-                                                ? 'Word Limit'
-                                                : 'Sudden Death',
-                                      ),
-                                    ),
-                                  ),
-                                  Container(width: 1.5, height: 32, color: themeProvider.borderColor.withOpacity(0.6)),
-                                  // Clickable Difficulty
-                                  Expanded(
-                                    child: InkWell(
-                                      onTap: () => _cycleDifficulty(gameState),
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: _quickStatTile(
-                                        context,
-                                        'DIFFICULTY',
-                                        gameState.difficulty == GameDifficulty.easy
-                                            ? 'Easy'
-                                            : gameState.difficulty == GameDifficulty.medium
-                                                ? 'Medium'
-                                                : gameState.difficulty == GameDifficulty.hard
-                                                    ? 'Hard'
-                                                    : 'Code',
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          
-                          // Inline parameter controllers
-                          if (gameState.mode == GameMode.timeAttack) ...[
-                            const SizedBox(height: 24),
-                            _buildSliderSelector(
-                              context,
-                              'TIME LIMIT',
-                              [15, 30, 60, 120],
-                              gameState.timeLimitSec,
-                              (v) => gameState.setTimeLimit(v),
-                            ),
-                          ] else if (gameState.mode == GameMode.wordLimit) ...[
-                            const SizedBox(height: 24),
-                            _buildSliderSelector(
-                              context,
-                              'WORD COUNT',
-                              [10, 25, 50, 100],
-                              gameState.wordLimitCount,
-                              (v) => gameState.setWordLimit(v),
-                            ),
-                          ],
-
-                          const SizedBox(height: 32),
-
-                          // Animated Scale launcher button
+                          // Interactive Launcher Button
                           MouseRegion(
-                            onEnter: (_) => setState(() => _isHovered = true),
-                            onExit: (_) => setState(() => _isHovered = false),
+                            onEnter: (_) => setState(() => _isEnterHovered = true),
+                            onExit: (_) => setState(() => _isEnterHovered = false),
                             child: GestureDetector(
                               onTap: () {
                                 gameState.initGame();
@@ -236,12 +203,12 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                                 );
                               },
                               child: AnimatedScale(
-                                scale: _isHovered ? 1.04 : 1.0,
+                                scale: _isEnterHovered ? 1.04 : 1.0,
                                 duration: const Duration(milliseconds: 150),
                                 curve: Curves.easeOutBack,
                                 child: Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
                                   decoration: BoxDecoration(
                                     color: themeProvider.accentColor,
                                     borderRadius: BorderRadius.circular(16),
@@ -259,7 +226,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                                     children: [
                                       Text(
                                         'ENTER SIMULATOR',
-                                        style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
+                                        style: themeProvider.getHeadingStyle(fontSize: 15, fontWeight: FontWeight.bold).copyWith(
                                               color: themeProvider.isDark ? Colors.black87 : Colors.white,
                                               letterSpacing: 1.0,
                                             ),
@@ -268,7 +235,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                                       Icon(
                                         Icons.arrow_forward_rounded,
                                         color: themeProvider.isDark ? Colors.black87 : Colors.white,
-                                        size: 18,
+                                        size: 16,
                                       ),
                                     ],
                                   ),
@@ -289,71 +256,174 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _quickStatTile(BuildContext context, String label, String val) {
+  Widget _buildModeRibbon(BuildContext context, GameState state) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(color: themeProvider.subtextColor),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            val.toUpperCase(),
-            style: themeProvider.getHeadingStyle(fontSize: 14, fontWeight: FontWeight.bold).copyWith(
-                  color: themeProvider.textColor,
-                  letterSpacing: 0.5,
+
+    return Container(
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: GameMode.values.map((mode) {
+          final isSelected = state.mode == mode;
+          final label = mode == GameMode.timeAttack
+              ? 'TIME'
+              : mode == GameMode.wordLimit
+                  ? 'WORDS'
+                  : 'SUDDEN';
+
+          return Expanded(
+            child: InkWell(
+              onTap: () => state.setMode(mode),
+              borderRadius: BorderRadius.circular(10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected ? themeProvider.accentColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-          ),
-        ],
+                child: Text(
+                  label,
+                  style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(
+                        color: isSelected
+                            ? (themeProvider.isDark ? Colors.black87 : Colors.white)
+                            : themeProvider.textColor.withOpacity(0.7),
+                        letterSpacing: 0.5,
+                      ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildSliderSelector(
-    BuildContext context,
-    String label,
-    List<int> options,
-    int activeValue,
-    Function(int) onSelect,
-  ) {
+  Widget _buildParameterSelector(BuildContext context, GameState state) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(color: themeProvider.subtextColor),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: options.map((val) {
-            final isSelected = val == activeValue;
-            return ChoiceChip(
-              label: Text(
-                '$val',
-                style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
-                      color: isSelected
-                          ? (themeProvider.isDark ? Colors.black87 : Colors.white)
-                          : themeProvider.textColor,
-                    ),
+    if (state.mode == GameMode.suddenDeath) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          'INSTANT FAILURE ON ERROR',
+          style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(
+                color: themeProvider.incorrectCharColor.withOpacity(0.8),
+                letterSpacing: 0.8,
               ),
-              selected: isSelected,
-              selectedColor: themeProvider.accentColor,
-              backgroundColor: themeProvider.cardColor,
-              onSelected: (selected) {
-                if (selected) {
-                  onSelect(val);
-                }
-              },
-            );
-          }).toList(),
         ),
-      ],
+      );
+    }
+
+    final List<int> options = state.mode == GameMode.timeAttack
+        ? [15, 30, 60, 120]
+        : [10, 25, 50, 100];
+
+    final int currentValue = state.mode == GameMode.timeAttack
+        ? state.timeLimitSec
+        : state.wordLimitCount;
+
+    final String suffix = state.mode == GameMode.timeAttack ? 's' : '';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: options.map((val) {
+        final isSelected = val == currentValue;
+        return ChoiceChip(
+          label: Text(
+            '$val$suffix',
+            style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
+                  color: isSelected
+                      ? (themeProvider.isDark ? Colors.black87 : Colors.white)
+                      : themeProvider.textColor.withOpacity(0.8),
+                ),
+          ),
+          selected: isSelected,
+          selectedColor: themeProvider.accentColor,
+          backgroundColor: themeProvider.cardColor.withOpacity(0.5),
+          onSelected: (selected) {
+            if (selected) {
+              if (state.mode == GameMode.timeAttack) {
+                state.setTimeLimit(val);
+              } else {
+                state.setWordLimit(val);
+              }
+            }
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDifficultyCard(BuildContext context, GameState state) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final diffIcon = _getDifficultyIcon(state.difficulty);
+    final diffLabel = state.difficulty == GameDifficulty.easy
+        ? 'EASY'
+        : state.difficulty == GameDifficulty.medium
+            ? 'MEDIUM'
+            : state.difficulty == GameDifficulty.hard
+                ? 'HARD'
+                : 'DEVELOPER CODE';
+
+    return GestureDetector(
+      onTap: () => _cycleDifficulty(state),
+      child: AnimatedScale(
+        scale: _difficultyScale,
+        duration: const Duration(milliseconds: 100),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          decoration: BoxDecoration(
+            color: themeProvider.backgroundColor.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: themeProvider.accentColor.withOpacity(0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: themeProvider.accentColor.withOpacity(0.04),
+                blurRadius: 15,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DIFFICULTY',
+                    style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
+                          color: themeProvider.subtextColor,
+                          letterSpacing: 0.8,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    diffLabel,
+                    style: themeProvider.getHeadingStyle(fontSize: 15, fontWeight: FontWeight.bold).copyWith(
+                          letterSpacing: 0.5,
+                        ),
+                  ),
+                ],
+              ),
+              Icon(
+                diffIcon,
+                color: themeProvider.accentColor,
+                size: 26,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
