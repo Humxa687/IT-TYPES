@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/game_state.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/typing_text_display.dart';
+import '../widgets/virtual_keyboard.dart';
 import '../widgets/settings_drawer.dart';
 import 'results_screen.dart';
 
@@ -89,7 +90,7 @@ class _GameScreenState extends State<GameScreen> {
             },
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
               child: Center(
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 900),
@@ -130,12 +131,12 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
 
                       // Main centered dashboard card
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.all(28),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                           decoration: BoxDecoration(
                             color: themeProvider.cardColor,
                             borderRadius: BorderRadius.circular(24),
@@ -151,11 +152,54 @@ class _GameScreenState extends State<GameScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // Sleek Minimalist Stats Ribbon
-                              _buildMinimalStatsRibbon(context),
-                              const SizedBox(height: 24),
-                              Container(height: 1.5, color: themeProvider.borderColor.withOpacity(0.5)),
-                              const SizedBox(height: 24),
+                              // Sleek Minimalist Stats & Sizing Ribbon
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(child: _buildMinimalStatsRibbon(context)),
+                                  // Inline Font Size Adjustment (A- / A+)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: themeProvider.backgroundColor.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.text_decrease_rounded, color: themeProvider.subtextColor, size: 14),
+                                          constraints: const BoxConstraints(),
+                                          padding: const EdgeInsets.all(4),
+                                          onPressed: () {
+                                            themeProvider.setFontSize(themeProvider.fontSize - 2);
+                                          },
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${themeProvider.fontSize.toInt()}px',
+                                          style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
+                                                color: themeProvider.textColor,
+                                              ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        IconButton(
+                                          icon: Icon(Icons.text_increase_rounded, color: themeProvider.subtextColor, size: 14),
+                                          constraints: const BoxConstraints(),
+                                          padding: const EdgeInsets.all(4),
+                                          onPressed: () {
+                                            themeProvider.setFontSize(themeProvider.fontSize + 2);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(height: 1.0, color: themeProvider.borderColor.withOpacity(0.3)),
+                              const SizedBox(height: 16),
 
                               // Typing Area
                               Expanded(
@@ -171,7 +215,6 @@ class _GameScreenState extends State<GameScreen> {
                                         ),
                                       ),
                                     ),
-                                    // Invisible TextField for input focus
                                     Opacity(
                                       opacity: 0.0,
                                       child: TextField(
@@ -206,11 +249,18 @@ class _GameScreenState extends State<GameScreen> {
                                   ],
                                 ),
                               ),
+                              
+                              const SizedBox(height: 12),
+                              Container(height: 1.0, color: themeProvider.borderColor.withOpacity(0.3)),
+                              const SizedBox(height: 12),
+
+                              // On-screen Virtual Keyboard Overlay
+                              const VirtualKeyboard(),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
                       // Bottom actions
                       OutlinedButton.icon(
@@ -233,7 +283,7 @@ class _GameScreenState extends State<GameScreen> {
                           style: themeProvider.getMonospaceTextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 6),
                     ],
                   ),
                 ),
@@ -250,7 +300,7 @@ class _GameScreenState extends State<GameScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         _ribbonTile(
           context,
@@ -288,7 +338,7 @@ class _GameScreenState extends State<GameScreen> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 26,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: color,
             fontFamily: 'monospace',
@@ -310,8 +360,9 @@ class _GameScreenState extends State<GameScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     return Container(
       width: 1.5,
-      height: 24,
-      color: themeProvider.borderColor.withOpacity(0.5),
+      height: 20,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      color: themeProvider.borderColor.withOpacity(0.3),
     );
   }
 }

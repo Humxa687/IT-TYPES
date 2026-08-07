@@ -41,6 +41,10 @@ class GameState extends ChangeNotifier {
   final AudioPlayer _errorPlayer = AudioPlayer();
   final AudioPlayer _successPlayer = AudioPlayer();
 
+  // Key highlight state for virtual keyboard
+  String? _lastPressedKey;
+  Timer? _keyHighlightTimer;
+
   // Getters
   GameMode get mode => _mode;
   GameDifficulty get difficulty => _difficulty;
@@ -55,6 +59,7 @@ class GameState extends ChangeNotifier {
   int get elapsedTimeSec => _elapsedTimeSec;
   List<double> get wpmHistory => _wpmHistory;
   bool get isSoundEnabled => _isSoundEnabled;
+  String? get lastPressedKey => _lastPressedKey;
 
   // Word Corpora
   static const List<String> _easyWords = [
@@ -106,6 +111,18 @@ class GameState extends ChangeNotifier {
     }
   }
 
+  // Trigger keyboard highlight
+  void _triggerKeyHighlight(String key) {
+    _keyHighlightTimer?.cancel();
+    _lastPressedKey = key.toLowerCase();
+    notifyListeners();
+
+    _keyHighlightTimer = Timer(const Duration(milliseconds: 100), () {
+      _lastPressedKey = null;
+      notifyListeners();
+    });
+  }
+
   // Configuration updates
   void setMode(GameMode mode) {
     _mode = mode;
@@ -154,6 +171,8 @@ class GameState extends ChangeNotifier {
   // Initialize/Start a new game session
   void initGame() {
     _timer?.cancel();
+    _keyHighlightTimer?.cancel();
+    _lastPressedKey = null;
     _isPlaying = false;
     _isFinished = false;
     _typedText = '';
@@ -203,6 +222,8 @@ class GameState extends ChangeNotifier {
       _startTimer();
     }
 
+    _triggerKeyHighlight(character);
+
     if (_typedText.length >= _targetText.length) return;
 
     final expectedChar = _targetText[_typedText.length];
@@ -228,6 +249,8 @@ class GameState extends ChangeNotifier {
   // Handle backspace
   void handleBackspace() {
     if (_isFinished || _typedText.isEmpty) return;
+
+    _triggerKeyHighlight('backspace');
 
     final lastIndex = _typedText.length - 1;
     _typedText = _typedText.substring(0, lastIndex);
@@ -287,6 +310,7 @@ class GameState extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _keyHighlightTimer?.cancel();
     _clickPlayer.dispose();
     _errorPlayer.dispose();
     _successPlayer.dispose();
