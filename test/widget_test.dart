@@ -18,8 +18,8 @@ void main() {
       ),
     );
 
-    // Verify that the title "IT TYPES 3.0" exists.
-    expect(find.text('IT TYPES 3.0'), findsOneWidget);
+    // Verify that the title "IT TYPES" exists.
+    expect(find.text('IT TYPES'), findsOneWidget);
 
     // Verify that the ENTER SIMULATOR button is present.
     expect(find.text('ENTER SIMULATOR'), findsOneWidget);

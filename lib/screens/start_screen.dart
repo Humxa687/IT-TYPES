@@ -109,28 +109,21 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                           ScaleTransition(
                             scale: _glowAnimation,
                             child: Container(
-                              width: 100,
-                              height: 100,
+                              padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
+                                color: themeProvider.accentColor.withOpacity(0.12),
                                 shape: BoxShape.circle,
-                                image: const DecorationImage(
-                                  image: AssetImage('assets/images/logo.jpg'),
-                                  fit: BoxFit.cover,
-                                ),
-                                border: Border.all(color: themeProvider.accentColor, width: 2.0),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: themeProvider.accentColor.withOpacity(0.25),
-                                    blurRadius: 20,
-                                    spreadRadius: 3,
-                                  ),
-                                ],
+                              ),
+                              child: Icon(
+                                Icons.keyboard_double_arrow_right_rounded,
+                                size: 48,
+                                color: themeProvider.accentColor,
                               ),
                             ),
                           ),
                           const SizedBox(height: 28),
                           Text(
-                            'IT TYPES 3.0',
+                            'IT TYPES',
                             style: themeProvider.getHeadingStyle(fontSize: 34, fontWeight: FontWeight.bold).copyWith(
                                   letterSpacing: 2.0,
                                 ),
