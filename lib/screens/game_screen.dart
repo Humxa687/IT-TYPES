@@ -6,6 +6,7 @@ import '../widgets/typing_text_display.dart';
 import '../widgets/virtual_keyboard.dart';
 import '../widgets/settings_drawer.dart';
 import 'results_screen.dart';
+import 'stats_screen.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -28,6 +29,7 @@ class _GameScreenState extends State<GameScreen> {
       _gameState = Provider.of<GameState>(context, listen: false);
       _textController.text = _gameState.typedText;
       _textController.addListener(_onTextChanged);
+      _gameState.initGame();
     });
   }
 
@@ -65,11 +67,80 @@ class _GameScreenState extends State<GameScreen> {
 
     // Skip results page push in Zen mode
     if (state.isFinished && state.mode != GameMode.zen) {
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ResultsScreen()),
-      );
+      ).then((_) {
+        // When coming back, re-initialize game
+        state.initGame();
+        _textController.clear();
+        _focusNode.requestFocus();
+      });
     }
+  }
+
+  void _showCustomTextDialog(BuildContext context, GameState gameState) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final TextEditingController textController = TextEditingController(text: gameState.customText);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: themeProvider.backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: themeProvider.borderColor),
+          ),
+          title: Text(
+            'PASTE CUSTOM TEXT',
+            style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: textController,
+            maxLines: null,
+            autofocus: true,
+            style: themeProvider.getMonospaceTextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'Enter paragraph text...',
+              hintStyle: TextStyle(color: themeProvider.subtextColor.withOpacity(0.5)),
+              border: InputBorder.none,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'CANCEL',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 12, fontWeight: FontWeight.bold).copyWith(
+                      color: themeProvider.subtextColor,
+                    ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeProvider.accentColor,
+                foregroundColor: themeProvider.isDark ? Colors.black87 : Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                gameState.setCustomText(textController.text);
+                gameState.initGame();
+                _textController.clear();
+                _focusNode.requestFocus();
+                Navigator.pop(context);
+              },
+              child: Text(
+                'SAVE TEXT',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 12, fontWeight: FontWeight.bold).copyWith(
+                      color: themeProvider.isDark ? Colors.black87 : Colors.white,
+                    ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -97,18 +168,33 @@ class _GameScreenState extends State<GameScreen> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Column(
                     children: [
-                      // Header Navigation bar
+                      // Header Navigation bar (Home console layout)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            icon: Icon(Icons.arrow_back_ios_new, color: themeProvider.textColor, size: 20),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
+                          Row(
+                            children: [
+                              Icon(Icons.keyboard_alt_outlined, color: themeProvider.accentColor, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'IT TYPES',
+                                style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
                           Row(
                             children: [
+                              // Career Stats Icon
+                              IconButton(
+                                icon: Icon(Icons.bar_chart_rounded, color: themeProvider.textColor, size: 22),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const StatsScreen()),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 4),
                               IconButton(
                                 icon: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 300),
@@ -121,7 +207,7 @@ class _GameScreenState extends State<GameScreen> {
                                 ),
                                 onPressed: () => themeProvider.toggleTheme(),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 4),
                               IconButton(
                                 icon: Icon(Icons.settings_outlined, color: themeProvider.textColor, size: 20),
                                 onPressed: () {
@@ -132,7 +218,24 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+
+                      // Monkeytype Configuration Segment Ribbon
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildPunctuationNumbersBlock(context, gameState),
+                            const SizedBox(width: 12),
+                            _buildModeSelectorBlock(context, gameState),
+                            const SizedBox(width: 12),
+                            _buildParameterSelectorBlock(context, gameState),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
                       // Main centered dashboard card
                       Expanded(
@@ -296,11 +399,233 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  // Segment 1: Toggles for punctuation & numbers
+  Widget _buildPunctuationNumbersBlock(BuildContext context, GameState state) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () {
+              state.togglePunctuation();
+              state.initGame();
+              _textController.clear();
+              _focusNode.requestFocus();
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
+                children: [
+                  Text('@', style: TextStyle(fontFamily: 'monospace', fontSize: 10, fontWeight: FontWeight.bold, color: state.includePunctuation ? themeProvider.accentColor : themeProvider.subtextColor)),
+                  const SizedBox(width: 3),
+                  Text('punctuation', style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(color: state.includePunctuation ? themeProvider.accentColor : themeProvider.subtextColor)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: () {
+              state.toggleNumbers();
+              state.initGame();
+              _textController.clear();
+              _focusNode.requestFocus();
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
+                children: [
+                  Text('#', style: TextStyle(fontFamily: 'monospace', fontSize: 10, fontWeight: FontWeight.bold, color: state.includeNumbers ? themeProvider.accentColor : themeProvider.subtextColor)),
+                  const SizedBox(width: 3),
+                  Text('numbers', style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(color: state.includeNumbers ? themeProvider.accentColor : themeProvider.subtextColor)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Segment 2: Center Mode Selector Block
+  Widget _buildModeSelectorBlock(BuildContext context, GameState state) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    final modesList = [
+      {'mode': GameMode.timeAttack, 'label': 'time', 'icon': Icons.watch_later_outlined},
+      {'mode': GameMode.wordLimit, 'label': 'words', 'icon': Icons.font_download_outlined},
+      {'mode': GameMode.quote, 'label': 'quote', 'icon': Icons.format_quote_rounded},
+      {'mode': GameMode.zen, 'label': 'zen', 'icon': Icons.terrain_rounded},
+      {'mode': GameMode.custom, 'label': 'custom', 'icon': Icons.build_rounded},
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: Row(
+        children: modesList.map((item) {
+          final mode = item['mode'] as GameMode;
+          final isSelected = state.mode == mode;
+          final label = item['label'] as String;
+          final icon = item['icon'] as IconData;
+
+          return InkWell(
+            onTap: () {
+              state.setMode(mode);
+              state.initGame();
+              _textController.clear();
+              _focusNode.requestFocus();
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
+                children: [
+                  Icon(icon, size: 10, color: isSelected ? themeProvider.accentColor : themeProvider.subtextColor),
+                  const SizedBox(width: 3),
+                  Text(
+                    label,
+                    style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
+                          color: isSelected ? themeProvider.accentColor : themeProvider.subtextColor,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // Segment 3: Parameter Selector Block
+  Widget _buildParameterSelectorBlock(BuildContext context, GameState state) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    if (state.mode == GameMode.zen) {
+      return Container(
+        decoration: BoxDecoration(
+          color: themeProvider.backgroundColor.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          'ZEN MODE',
+          style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
+        ),
+      );
+    }
+
+    if (state.mode == GameMode.quote) {
+      return Container(
+        decoration: BoxDecoration(
+          color: themeProvider.backgroundColor.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          'FAMOUS QUOTES',
+          style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
+        ),
+      );
+    }
+
+    if (state.mode == GameMode.custom) {
+      return Container(
+        decoration: BoxDecoration(
+          color: themeProvider.backgroundColor.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        child: InkWell(
+          onTap: () => _showCustomTextDialog(context, state),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              children: [
+                Icon(Icons.edit_note_rounded, size: 12, color: themeProvider.accentColor),
+                const SizedBox(width: 3),
+                Text(
+                  'PASTE TEXT',
+                  style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final List<int> options = state.mode == GameMode.timeAttack
+        ? [0, 15, 30, 60, 120]
+        : [10, 25, 50, 100];
+
+    final int currentValue = state.mode == GameMode.timeAttack
+        ? state.timeLimitSec
+        : state.wordLimitCount;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      child: Row(
+        children: options.map((val) {
+          final isSelected = val == currentValue;
+          final String labelText = (state.mode == GameMode.timeAttack && val == 0) ? '∞' : '$val';
+
+          return InkWell(
+            onTap: () {
+              if (state.mode == GameMode.timeAttack) {
+                state.setTimeLimit(val);
+              } else {
+                state.setWordLimit(val);
+              }
+              state.initGame();
+              _textController.clear();
+              _focusNode.requestFocus();
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              alignment: Alignment.center,
+              child: Text(
+                labelText,
+                style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
+                      color: isSelected ? themeProvider.accentColor : themeProvider.subtextColor,
+                    ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildMinimalStatsRibbon(BuildContext context) {
     final gameState = Provider.of<GameState>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    // Zen mode stopwatch shows count-up elapsed time
     final String timeLabel = gameState.mode == GameMode.zen
         ? '${gameState.elapsedTimeSec}s'
         : (gameState.mode == GameMode.timeAttack && gameState.timeLimitSec == 0)

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/game_state.dart';
 import 'providers/theme_provider.dart';
-import 'screens/start_screen.dart';
+import 'screens/game_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark, // Default base brightness
       ),
-      home: const StartScreen(),
+      home: const GameScreen(),
     );
   }
 }

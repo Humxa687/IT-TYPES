@@ -18,10 +18,7 @@ void main() {
       ),
     );
 
-    // Verify that the title "IT TYPES" exists.
-    expect(find.text('IT TYPES'), findsOneWidget);
-
-    // Verify that the ENTER SIMULATOR button is present.
-    expect(find.text('ENTER SIMULATOR'), findsOneWidget);
+    // Verify that the Reset Simulator button exists.
+    expect(find.text('RESET SIMULATOR'), findsOneWidget);
   });
 }

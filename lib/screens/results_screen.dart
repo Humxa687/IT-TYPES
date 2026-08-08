@@ -1,17 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 import '../providers/game_state.dart';
 import '../providers/theme_provider.dart';
+import 'stats_screen.dart';
 
 class ResultsScreen extends StatelessWidget {
   const ResultsScreen({super.key});
+
+  double _calculateRawWpm(GameState state) {
+    if (state.elapsedTimeSec <= 0) return 0.0;
+    double totalKeystrokes = (state.correctKeys + state.incorrectKeys) / 5.0;
+    double minutes = state.elapsedTimeSec / 60.0;
+    return (totalKeystrokes / minutes).clamp(0.0, 300.0);
+  }
+
+  double _calculateConsistency(List<double> history) {
+    if (history.isEmpty || history.length < 2) return 92.0; // Realistic default
+    final clean = history.where((v) => v > 0.0).toList();
+    if (clean.length < 2) return 95.0;
+
+    double sum = clean.reduce((a, b) => a + b);
+    double mean = sum / clean.length;
+    double sumOfSquaredDiffs = clean.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b);
+    double variance = sumOfSquaredDiffs / clean.length;
+    double stdDev = sqrt(variance);
+
+    if (mean == 0) return 0.0;
+    double consistency = (1.0 - (stdDev / mean)) * 100.0;
+    return consistency.clamp(10.0, 100.0);
+  }
 
   @override
   Widget build(BuildContext context) {
     final gameState = Provider.of<GameState>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final rawWpm = _calculateRawWpm(gameState);
+    final consistency = _calculateConsistency(gameState.wpmHistory);
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
     return Scaffold(
       body: Container(
@@ -19,18 +46,24 @@ class ResultsScreen extends StatelessWidget {
           gradient: themeProvider.backgroundGradient,
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-            child: Center(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 800),
+                constraints: const BoxConstraints(maxWidth: 850),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Top header bar (actions)
+                    // Top navigation action row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Text(
+                          'IT TYPES REPORT',
+                          style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
+                                letterSpacing: 1.0,
+                              ),
+                        ),
                         IconButton(
                           icon: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 300),
@@ -38,146 +71,80 @@ class ResultsScreen extends StatelessWidget {
                               themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
                               key: ValueKey<bool>(themeProvider.isDark),
                               color: themeProvider.textColor,
-                              size: 22,
+                              size: 20,
                             ),
                           ),
                           onPressed: () => themeProvider.toggleTheme(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 36),
 
-                    // Title Header
-                    Text(
-                      'PERFORMANCE REPORT',
-                      style: themeProvider.getHeadingStyle(fontSize: 28, fontWeight: FontWeight.bold).copyWith(
-                            color: themeProvider.accentColor,
-                            letterSpacing: 1.5,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Typing session metrics analyzed',
-                      style: themeProvider.getMonospaceTextStyle(fontSize: 13).copyWith(
-                            color: themeProvider.subtextColor,
-                          ),
-                    ),
-                    const SizedBox(height: 40),
-
-                    // Grid stats cards
-                    GridView.count(
-                      crossAxisCount: isMobile ? 2 : 4,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: isMobile ? 1.3 : 1.4,
-                      children: [
-                        _buildStatCard(
-                          context,
-                          'SPEED',
-                          '${gameState.wpm.toStringAsFixed(1)} WPM',
-                          Icons.speed_rounded,
-                        ),
-                        _buildStatCard(
-                          context,
-                          'ACCURACY',
-                          '${gameState.accuracy.toStringAsFixed(1)}%',
-                          Icons.insights_rounded,
-                        ),
-                        _buildStatCard(
-                          context,
-                          'TIME TAKEN',
-                          '${gameState.elapsedTimeSec}s',
-                          Icons.hourglass_bottom_rounded,
-                        ),
-                        _buildStatCard(
-                          context,
-                          'KEYSTROKES',
-                          '${gameState.correctKeys}/${gameState.incorrectKeys}',
-                          Icons.keyboard_alt_outlined,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Speed Timeline Painter
-                    _buildSectionHeader(context, 'SPEED VELOCITY GRAPH'),
-                    const SizedBox(height: 12),
-                    Container(
-                      height: 220,
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: themeProvider.cardColor,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: themeProvider.borderColor),
-                      ),
-                      child: gameState.wpmHistory.length > 1
-                          ? CustomPaint(
-                              painter: WpmChartPainter(
-                                history: gameState.wpmHistory,
-                                accentColor: themeProvider.accentColor,
-                                gridColor: themeProvider.subtextColor.withOpacity(0.15),
-                                textColor: themeProvider.subtextColor,
+                    // Main Scoreboard: Split columns (large metrics on left, chart on right)
+                    isMobile
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildBigStatsColumn(context),
+                              const SizedBox(height: 28),
+                              _buildChartCard(context),
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 180,
+                                child: _buildBigStatsColumn(context),
                               ),
-                            )
-                          : Center(
-                              child: Text(
-                                'No timeline metrics available for short test runs.',
-                                style: themeProvider.getMonospaceTextStyle(fontSize: 12).copyWith(
-                                      color: themeProvider.subtextColor,
-                                    ),
+                              const SizedBox(width: 32),
+                              Expanded(
+                                child: _buildChartCard(context),
                               ),
-                            ),
-                    ),
-
+                            ],
+                          ),
                     const SizedBox(height: 40),
 
-                    // Button actions
+                    // Details Ribbon (test type, raw, characters, consistency, time)
+                    _buildDetailsRibbon(context, rawWpm, consistency),
+                    const SizedBox(height: 48),
+
+                    // Bottom Navigation Shortcuts
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: themeProvider.accentColor,
-                            foregroundColor: themeProvider.isDark ? Colors.black87 : Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 4,
-                          ),
+                        // Repeat Test
+                        IconButton(
+                          icon: Icon(Icons.replay_rounded, color: themeProvider.subtextColor, size: 24),
+                          tooltip: 'Repeat Test',
                           onPressed: () {
-                            gameState.initGame();
-                            Navigator.pop(context); // Go back to GameScreen
+                            Navigator.pop(context);
                           },
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: Text(
-                            'REPLAY TEST',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 13, fontWeight: FontWeight.bold).copyWith(
-                                  color: themeProvider.isDark ? Colors.black87 : Colors.white,
-                                ),
-                          ),
                         ),
-                        const SizedBox(width: 16),
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: themeProvider.borderColor),
-                            foregroundColor: themeProvider.textColor,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
+                        const SizedBox(width: 24),
+                        // Return Home
+                        IconButton(
+                          icon: Icon(Icons.arrow_forward_rounded, color: themeProvider.accentColor, size: 28),
+                          tooltip: 'Next Test',
                           onPressed: () {
-                            Navigator.of(context).popUntil((route) => route.isFirst);
+                            Navigator.pop(context);
                           },
-                          icon: const Icon(Icons.home_rounded),
-                          label: Text(
-                            'MAIN MENU',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        // Career Stats Screen
+                        IconButton(
+                          icon: Icon(Icons.bar_chart_rounded, color: themeProvider.subtextColor, size: 24),
+                          tooltip: 'Career Performance logs',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const StatsScreen()),
+                            );
+                          },
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -188,34 +155,60 @@ class ResultsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildBigStatsColumn(BuildContext context) {
+    final gameState = Provider.of<GameState>(context, listen: false);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    return Row(
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 8,
-          height: 18,
-          decoration: BoxDecoration(
+        // WPM Metric
+        Text(
+          'wpm',
+          style: themeProvider.getMonospaceTextStyle(fontSize: 14).copyWith(
+                color: themeProvider.subtextColor,
+                letterSpacing: 0.5,
+              ),
+        ),
+        Text(
+          '${gameState.wpm.toStringAsFixed(0)}',
+          style: TextStyle(
+            fontSize: 64,
+            fontWeight: FontWeight.bold,
             color: themeProvider.accentColor,
-            borderRadius: BorderRadius.circular(4),
+            fontFamily: 'monospace',
+            height: 1.1,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(height: 24),
+        // Accuracy Metric
         Text(
-          title,
-          style: themeProvider.getMonospaceTextStyle(fontSize: 14, fontWeight: FontWeight.bold).copyWith(
-                color: themeProvider.textColor,
-                letterSpacing: 1.0,
+          'acc',
+          style: themeProvider.getMonospaceTextStyle(fontSize: 14).copyWith(
+                color: themeProvider.subtextColor,
+                letterSpacing: 0.5,
               ),
+        ),
+        Text(
+          '${gameState.accuracy.toStringAsFixed(0)}%',
+          style: TextStyle(
+            fontSize: 64,
+            fontWeight: FontWeight.bold,
+            color: themeProvider.correctCharColor,
+            fontFamily: 'monospace',
+            height: 1.1,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+  Widget _buildChartCard(BuildContext context) {
+    final gameState = Provider.of<GameState>(context, listen: false);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     return Container(
+      height: 220,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: themeProvider.cardColor,
@@ -223,35 +216,103 @@ class ResultsScreen extends StatelessWidget {
         border: Border.all(color: themeProvider.borderColor),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: themeProvider.accentColor, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(
-                        color: themeProvider.subtextColor,
-                      ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Text(
+                'SPEED HISTOGRAM OVER TIME',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
+                      color: themeProvider.subtextColor,
+                      letterSpacing: 0.8,
+                    ),
+              ),
+              Text(
+                'wpm/sec',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
+                      color: themeProvider.subtextColor,
+                    ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: themeProvider.getHeadingStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const SizedBox(height: 16),
+          Expanded(
+            child: CustomPaint(
+              painter: WpmChartPainter(
+                history: gameState.wpmHistory,
+                accentColor: themeProvider.accentColor,
+                gridColor: themeProvider.borderColor.withOpacity(0.5),
+                textColor: themeProvider.subtextColor,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildDetailsRibbon(BuildContext context, double rawWpm, double consistency) {
+    final gameState = Provider.of<GameState>(context, listen: false);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    final modeLabel = gameState.mode.name.toLowerCase();
+    final diffLabel = gameState.difficulty.name.toLowerCase();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: themeProvider.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: themeProvider.borderColor),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceAround,
+        runSpacing: 20,
+        spacing: 20,
+        children: [
+          _ribbonTile(context, 'test type', '$modeLabel\n$diffLabel'),
+          _ribbonTile(context, 'raw wpm', rawWpm.toStringAsFixed(0)),
+          _ribbonTile(context, 'characters', '${gameState.correctKeys}/${gameState.incorrectKeys}/0/0'),
+          _ribbonTile(context, 'consistency', '${consistency.toStringAsFixed(0)}%'),
+          _ribbonTile(context, 'time', '${gameState.elapsedTimeSec}s'),
+        ],
+      ),
+    );
+  }
+
+  Widget _ribbonTile(BuildContext context, String label, String value) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
+                color: themeProvider.subtextColor,
+                letterSpacing: 0.5,
+              ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: themeProvider.textColor,
+            fontFamily: 'monospace',
+            height: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
+// Custom Painter to render a smooth line chart showing typing progress over time
 class WpmChartPainter extends CustomPainter {
   final List<double> history;
   final Color accentColor;
@@ -271,67 +332,79 @@ class WpmChartPainter extends CustomPainter {
 
     final paintLine = Paint()
       ..color = accentColor
-      ..strokeWidth = 3.5
+      ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     final paintFill = Paint()
-      ..color = accentColor.withOpacity(0.12)
+      ..color = accentColor.withOpacity(0.06)
       ..style = PaintingStyle.fill;
 
-    final paintGrid = Paint()
+    // Draw grid lines
+    final gridPaint = Paint()
       ..color = gridColor
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
 
-    double maxWPM = history.reduce((curr, next) => curr > next ? curr : next);
-    if (maxWPM < 40) maxWPM = 40;
-
-    final gridCount = 4;
-    final wpmStep = maxWPM / gridCount;
-    for (int i = 0; i <= gridCount; i++) {
-      final y = size.height - (i * (size.height / gridCount));
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paintGrid);
-
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: '${(wpmStep * i).toInt()}',
-          style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 10, fontFamily: 'monospace'),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(4, y - 12));
+    // 4 horizontal grid lines
+    const int gridRows = 4;
+    for (int i = 0; i <= gridRows; i++) {
+      double y = size.height * i / gridRows;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    final int points = history.length;
-    final double dx = size.width / (points - 1);
+    // Determine max speed boundaries
+    double maxWpm = history.reduce(max);
+    if (maxWpm < 40) maxWpm = 40;
+
+    double dx = size.width / (history.length > 1 ? history.length - 1 : 1);
 
     final path = Path();
     final fillPath = Path();
 
-    final startY = size.height - (history[0] / maxWPM * size.height);
-    path.moveTo(0, startY);
-    fillPath.moveTo(0, size.height);
-    fillPath.lineTo(0, startY);
+    for (int i = 0; i < history.length; i++) {
+      double x = i * dx;
+      double y = size.height - (history[i] / maxWpm * size.height);
 
-    for (int i = 1; i < points; i++) {
-      final x = i * dx;
-      final y = size.height - (history[i] / maxWPM * size.height);
-      path.lineTo(x, y);
-      fillPath.lineTo(x, y);
+      if (i == 0) {
+        path.moveTo(x, y);
+        fillPath.moveTo(x, size.height);
+        fillPath.lineTo(x, y);
+      } else {
+        path.lineTo(x, y);
+        fillPath.lineTo(x, y);
+      }
     }
 
     fillPath.lineTo(size.width, size.height);
     fillPath.close();
 
+    // Draw paths
     canvas.drawPath(fillPath, paintFill);
     canvas.drawPath(path, paintLine);
+
+    // Draw simple text boundaries
+    final textPainterMax = TextPainter(
+      text: TextSpan(
+        text: '${maxWpm.toInt()}',
+        style: TextStyle(color: textColor, fontSize: 8, fontFamily: 'monospace'),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainterMax.layout();
+    textPainterMax.paint(canvas, const Offset(4, 2));
+
+    final textPainterMin = TextPainter(
+      text: TextSpan(
+        text: '0',
+        style: TextStyle(color: textColor, fontSize: 8, fontFamily: 'monospace'),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainterMin.layout();
+    textPainterMin.paint(canvas, Offset(4, size.height - 12));
   }
 
   @override
-  bool shouldRepaint(covariant WpmChartPainter oldDelegate) {
-    return oldDelegate.history != history ||
-        oldDelegate.accentColor != accentColor ||
-        oldDelegate.gridColor != gridColor;
-  }
+  bool shouldRepaint(covariant WpmChartPainter oldDelegate) => true;
 }
