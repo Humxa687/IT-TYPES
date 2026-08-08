@@ -503,6 +503,7 @@ class ConfettiParticle {
   double x, y, size, vx, vy, rotation, vr;
   Color color;
   bool isSquare;
+  double opacity = 1.0;
 
   ConfettiParticle({
     required this.x,
@@ -520,6 +521,7 @@ class ConfettiParticle {
     x += vx;
     y += vy;
     rotation += vr;
+    opacity = (opacity - 0.006).clamp(0.0, 1.0);
   }
 }
 
@@ -601,10 +603,10 @@ class ConfettiPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var p in particles) {
-      if (p.x < 0 || p.x > size.width || p.y > size.height) continue;
+      if (p.x < 0 || p.x > size.width || p.y > size.height || p.opacity <= 0.0) continue;
 
       final paint = Paint()
-        ..color = p.color
+        ..color = p.color.withOpacity(p.opacity)
         ..style = PaintingStyle.fill;
 
       canvas.save();
