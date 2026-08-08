@@ -27,7 +27,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   void setFontSize(double size) {
-    _fontSize = size.clamp(14.0, 28.0);
+    _fontSize = size.clamp(14.0, 50.0);
     notifyListeners();
   }
 

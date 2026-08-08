@@ -4,6 +4,7 @@ import '../providers/game_state.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/settings_drawer.dart';
 import 'game_screen.dart';
+import 'stats_screen.dart';
 
 class StartScreen extends StatefulWidget {
   const StartScreen({super.key});
@@ -17,7 +18,6 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
   late AnimationController _logoAnimController;
   late Animation<double> _logoGlowAnimation;
   
-  // Hover & Active animation configurations
   bool _isEnterHovered = false;
   double _difficultyScale = 1.0;
 
@@ -45,11 +45,9 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
       _difficultyScale = 0.9;
     });
     
-    // Cycle difficulty values
     final nextIndex = (state.difficulty.index + 1) % GameDifficulty.values.length;
     state.setDifficulty(GameDifficulty.values[nextIndex]);
     
-    // Animate scale rebound
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         setState(() {
@@ -112,11 +110,26 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                       ),
                       onPressed: () => themeProvider.toggleTheme(),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.settings_outlined, color: themeProvider.textColor, size: 22),
-                      onPressed: () {
-                        _scaffoldKey.currentState?.openEndDrawer();
-                      },
+                    Row(
+                      children: [
+                        // Career Stats dashboard icon
+                        IconButton(
+                          icon: Icon(Icons.bar_chart_rounded, color: themeProvider.textColor, size: 24),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const StatsScreen()),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(Icons.settings_outlined, color: themeProvider.textColor, size: 22),
+                          onPressed: () {
+                            _scaffoldKey.currentState?.openEndDrawer();
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -178,15 +191,15 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                           ),
                           const SizedBox(height: 28),
 
-                          // Monkeytype-style mode selection ribbon (Side-by-side)
+                          // Mode selection ribbon (Side-by-side)
                           _buildModeRibbon(context, gameState),
                           const SizedBox(height: 16),
 
-                          // Dynamic Inline Parameter Selector (Time Attack / Word Limit options)
+                          // Dynamic Inline Parameter Selector (Time / Word options)
                           _buildParameterSelector(context, gameState),
                           const SizedBox(height: 24),
 
-                          // Animated Difficulty Card
+                          // Animated Difficulty Card (Normal Casing)
                           _buildDifficultyCard(context, gameState),
                           const SizedBox(height: 32),
 
@@ -320,8 +333,9 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
       );
     }
 
+    // 0 represents Unlimited (∞)
     final List<int> options = state.mode == GameMode.timeAttack
-        ? [15, 30, 60, 120]
+        ? [0, 15, 30, 60, 120]
         : [10, 25, 50, 100];
 
     final int currentValue = state.mode == GameMode.timeAttack
@@ -334,9 +348,11 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: options.map((val) {
         final isSelected = val == currentValue;
+        final labelText = (state.mode == GameMode.timeAttack && val == 0) ? '∞' : '$val$suffix';
+
         return ChoiceChip(
           label: Text(
-            '$val$suffix',
+            labelText,
             style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
                   color: isSelected
                       ? (themeProvider.isDark ? Colors.black87 : Colors.white)
@@ -364,12 +380,12 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final diffIcon = _getDifficultyIcon(state.difficulty);
     final diffLabel = state.difficulty == GameDifficulty.easy
-        ? 'EASY'
+        ? 'Easy'
         : state.difficulty == GameDifficulty.medium
-            ? 'MEDIUM'
+            ? 'Medium'
             : state.difficulty == GameDifficulty.hard
-                ? 'HARD'
-                : 'DEVELOPER CODE';
+                ? 'Hard'
+                : 'Code';
 
     return GestureDetector(
       onTap: () => _cycleDifficulty(state),
@@ -400,8 +416,8 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'DIFFICULTY',
-                    style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
+                    'Difficulty',
+                    style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(
                           color: themeProvider.subtextColor,
                           letterSpacing: 0.8,
                         ),

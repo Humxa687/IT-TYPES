@@ -115,8 +115,8 @@ class SettingsDrawer extends StatelessWidget {
                                 Slider(
                                   value: themeProvider.fontSize,
                                   min: 14.0,
-                                  max: 28.0,
-                                  divisions: 7,
+                                  max: 50.0,
+                                  divisions: 18,
                                   activeColor: themeProvider.accentColor,
                                   inactiveColor: themeProvider.borderColor,
                                   onChanged: (val) => themeProvider.setFontSize(val),
