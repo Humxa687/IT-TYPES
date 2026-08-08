@@ -537,6 +537,7 @@ class _ConfettiCelebrationState extends State<ConfettiCelebration> with SingleTi
   late AnimationController _particleController;
   final List<ConfettiParticle> _particles = [];
   final Random _rand = Random();
+  bool _initialized = false;
 
   @override
   void initState() {
@@ -551,8 +552,16 @@ class _ConfettiCelebrationState extends State<ConfettiCelebration> with SingleTi
           }
         });
       });
+    _particleController.forward();
+  }
 
-    // Color choices
+  void _initializeParticles(double width, double height) {
+    if (_initialized) return;
+    _initialized = true;
+
+    final centerX = width / 2;
+    final centerY = height / 2;
+
     final colors = [
       const Color(0xFF00E5FF),
       const Color(0xFFFFC107),
@@ -562,22 +571,23 @@ class _ConfettiCelebrationState extends State<ConfettiCelebration> with SingleTi
       const Color(0xFF29B6F6),
     ];
 
-    // Spawn 90 particles
-    for (int i = 0; i < 90; i++) {
+    // Spawn 100 particles bursting radially from center
+    for (int i = 0; i < 100; i++) {
+      double angle = _rand.nextDouble() * 2 * pi;
+      double speed = 1.0 + _rand.nextDouble() * 7.0;
+
       _particles.add(ConfettiParticle(
-        x: _rand.nextDouble() * 800,
-        y: -30 - _rand.nextDouble() * 400,
-        size: 5.0 + _rand.nextDouble() * 7.0,
+        x: centerX,
+        y: centerY,
+        size: 4.0 + _rand.nextDouble() * 7.0,
         color: colors[_rand.nextInt(colors.length)],
-        vx: -2.5 + _rand.nextDouble() * 5.0,
-        vy: 2.5 + _rand.nextDouble() * 4.5,
+        vx: cos(angle) * speed,
+        vy: sin(angle) * speed,
         rotation: _rand.nextDouble() * pi,
-        vr: -0.08 + _rand.nextDouble() * 0.16,
+        vr: -0.1 + _rand.nextDouble() * 0.2,
         isSquare: _rand.nextBool(),
       ));
     }
-
-    _particleController.forward();
   }
 
   @override
@@ -588,9 +598,14 @@ class _ConfettiCelebrationState extends State<ConfettiCelebration> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: ConfettiPainter(particles: _particles),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _initializeParticles(constraints.maxWidth, constraints.maxHeight);
+        return CustomPaint(
+          size: Size.infinite,
+          painter: ConfettiPainter(particles: _particles),
+        );
+      },
     );
   }
 }
