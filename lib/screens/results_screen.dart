@@ -17,6 +17,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   late AnimationController _badgeAnimController;
   late Animation<double> _badgeScaleAnim;
   late Animation<double> _badgeSlideAnim;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -35,11 +36,16 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     );
 
     _badgeAnimController.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _badgeAnimController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -101,6 +107,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         : _calculateRank(gameState.difficulty, gameState.elapsedTimeSec);
 
     return Focus(
+      focusNode: _focusNode,
       autofocus: true,
       onKeyEvent: (node, event) {
         final eventStr = event.runtimeType.toString();
