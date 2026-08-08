@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:math';
 import '../providers/game_state.dart';
 import '../providers/theme_provider.dart';
+import 'auth_screen.dart';
 import 'stats_screen.dart';
 
 class ResultsScreen extends StatelessWidget {
@@ -107,7 +108,35 @@ class ResultsScreen extends StatelessWidget {
 
                     // Details Ribbon (test type, raw, characters, consistency, time)
                     _buildDetailsRibbon(context, rawWpm, consistency),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
+
+                    // Interactive Sign In / Session Save Status Banner
+                    Center(
+                      child: InkWell(
+                        onTap: gameState.isLoggedIn
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const AuthScreen()),
+                                );
+                              },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          child: Text(
+                            gameState.isLoggedIn
+                                ? 'Logged in as ${gameState.userName} (Result saved to dashboard)'
+                                : 'Sign in to save your result',
+                            style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
+                                  color: themeProvider.subtextColor,
+                                  decoration: gameState.isLoggedIn ? TextDecoration.none : TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
 
                     // Bottom Navigation Shortcuts
                     Row(

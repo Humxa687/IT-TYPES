@@ -60,6 +60,10 @@ class GameState extends ChangeNotifier {
   List<Map<String, dynamic>> _gameLogs = [];
   String _customText = 'the quick brown fox jumps over the lazy dog';
 
+  // Session Authentication State
+  bool _isLoggedIn = false;
+  String _userEmail = '';
+
   // Getters
   GameMode get mode => _mode;
   GameDifficulty get difficulty => _difficulty;
@@ -81,6 +85,8 @@ class GameState extends ChangeNotifier {
   String get userName => _userName;
   List<Map<String, dynamic>> get gameLogs => _gameLogs;
   String get customText => _customText;
+  bool get isLoggedIn => _isLoggedIn;
+  String get userEmail => _userEmail;
 
   // Structured Sentence Databases
   static const List<String> _easySentences = [
@@ -222,6 +228,9 @@ class GameState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _userName = prefs.getString('userName') ?? 'Typist';
       _customText = prefs.getString('customText') ?? 'the quick brown fox jumps over the lazy dog';
+      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      _userEmail = prefs.getString('userEmail') ?? '';
+      
       final List<String>? logs = prefs.getStringList('gameLogs');
       if (logs != null) {
         _gameLogs = logs.map((log) => Map<String, dynamic>.from(jsonDecode(log))).toList();
@@ -249,6 +258,37 @@ class GameState extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Error saving game log: $e');
+    }
+  }
+
+  // Auth Operations
+  void login(String email, String username) async {
+    _isLoggedIn = true;
+    _userName = username.trim().isEmpty ? 'Typist' : username.trim();
+    _userEmail = email.trim();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('userName', _userName);
+      await prefs.setString('userEmail', _userEmail);
+    } catch (e) {
+      debugPrint('Error saving login: $e');
+    }
+  }
+
+  void logout() async {
+    _isLoggedIn = false;
+    _userName = 'Typist';
+    _userEmail = '';
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', false);
+      await prefs.setString('userName', 'Typist');
+      await prefs.remove('userEmail');
+    } catch (e) {
+      debugPrint('Error clearing login: $e');
     }
   }
 
@@ -397,7 +437,6 @@ class GameState extends ChangeNotifier {
   void _generateTargetText() {
     final rand = Random();
     
-    // Code difficulty handles code blocks directly
     if (_difficulty == GameDifficulty.code) {
       _targetText = _codeSnippets[rand.nextInt(_codeSnippets.length)];
       return;
@@ -410,7 +449,6 @@ class GameState extends ChangeNotifier {
     } else if (_mode == GameMode.quote) {
       baseText = _quotes[rand.nextInt(_quotes.length)];
     } else {
-      // Pick random sentence by difficulty
       if (_difficulty == GameDifficulty.easy) {
         baseText = _easySentences[rand.nextInt(_easySentences.length)];
       } else if (_difficulty == GameDifficulty.medium) {
@@ -547,7 +585,6 @@ class GameState extends ChangeNotifier {
   void _checkCompletion() {
     if (_typedText.length >= _targetText.length) {
       if (_mode == GameMode.zen) {
-        // Zen mode loop: complete text, automatically generate new one, clear progress, and continue typing
         _generateTargetText();
         _typedText = '';
         _recalculateStats();
