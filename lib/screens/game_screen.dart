@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import '../providers/game_state.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/typing_text_display.dart';
@@ -18,13 +19,29 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _focusNode;
   final TextEditingController _textController = TextEditingController();
   late GameState _gameState;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode(onKeyEvent: (node, event) {
+      final eventStr = event.runtimeType.toString();
+      if (eventStr.contains('Down')) {
+        if (event.logicalKey == LogicalKeyboardKey.tab) {
+          final state = Provider.of<GameState>(context, listen: false);
+          state.initGame();
+          _textController.clear();
+          _focusNode.requestFocus();
+          return KeyEventResult.handled;
+        } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+          _scaffoldKey.currentState?.openEndDrawer();
+          return KeyEventResult.handled;
+        }
+      }
+      return KeyEventResult.ignored;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
       _gameState = Provider.of<GameState>(context, listen: false);
@@ -330,26 +347,13 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Main centered dashboard card
+                      // Main centered typing container (Cardless, floating layout matching Monkeytype)
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                          decoration: BoxDecoration(
-                            color: themeProvider.cardColor,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: themeProvider.borderColor, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: themeProvider.accentColor.withOpacity(0.04),
-                                blurRadius: 25,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // Sleek Minimalist Stats & Sizing Ribbon
                               // Sleek Minimalist Stats & Sizing Ribbon
                               LayoutBuilder(
                                 builder: (context, constraints) {
@@ -377,9 +381,7 @@ class _GameScreenState extends State<GameScreen> {
                                   }
                                 },
                               ),
-                              const SizedBox(height: 12),
-                              Container(height: 1.0, color: themeProvider.borderColor.withOpacity(0.3)),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
 
                               // Typing Area
                               Expanded(
@@ -413,7 +415,7 @@ class _GameScreenState extends State<GameScreen> {
                                     if (!_focusNode.hasFocus)
                                       Positioned.fill(
                                         child: Container(
-                                          color: themeProvider.backgroundColor.withOpacity(0.85),
+                                          color: themeProvider.backgroundColor.withOpacity(0.9),
                                           child: Center(
                                             child: Text(
                                               'CLICK OR TAP HERE TO START TYPING',
@@ -429,41 +431,52 @@ class _GameScreenState extends State<GameScreen> {
                                   ],
                                 ),
                               ),
-                              
-                              const SizedBox(height: 12),
-                              Container(height: 1.0, color: themeProvider.borderColor.withOpacity(0.3)),
+                              const SizedBox(height: 16),
+
+                              // Central Restart Button
+                              Center(
+                                child: IconButton(
+                                  icon: Icon(Icons.refresh_rounded, color: themeProvider.subtextColor.withOpacity(0.7), size: 28),
+                                  tooltip: 'Restart Test',
+                                  onPressed: () {
+                                    gameState.initGame();
+                                    _textController.clear();
+                                    _focusNode.requestFocus();
+                                  },
+                                ),
+                              ),
                               const SizedBox(height: 12),
 
-                              // On-screen Virtual Keyboard Overlay
+                              // On-screen Virtual Keyboard Overlay (Only visible on non-mobile viewports)
                               const VirtualKeyboard(),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
-                      // Bottom actions
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: themeProvider.borderColor),
-                          foregroundColor: themeProvider.textColor,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      // Bottom keyboard shortcut guides
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'tab - restart test',
+                            style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
+                                  color: themeProvider.subtextColor.withOpacity(0.5),
+                                  letterSpacing: 0.5,
+                                ),
                           ),
-                        ),
-                        onPressed: () {
-                          gameState.initGame();
-                          _textController.clear();
-                          _focusNode.requestFocus();
-                        },
-                        icon: const Icon(Icons.replay_rounded),
-                        label: Text(
-                          'RESET SIMULATOR',
-                          style: themeProvider.getMonospaceTextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'esc - settings drawer',
+                            style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
+                                  color: themeProvider.subtextColor.withOpacity(0.35),
+                                  letterSpacing: 0.5,
+                                ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),

@@ -18,7 +18,7 @@ void main() {
       ),
     );
 
-    // Verify that the Reset Simulator button exists.
-    expect(find.text('RESET SIMULATOR'), findsOneWidget);
+    // Verify that the restart shortcut guide exists.
+    expect(find.text('tab - restart test'), findsOneWidget);
   });
 }
