@@ -37,18 +37,18 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Color get backgroundColor {
-    return isDark ? const Color(0xFF0F1319) : const Color(0xFFF8FAFC); // Custom space deep-black background
+    return isDark ? const Color(0xFF111317) : const Color(0xFFFAFAFA);
   }
 
   Gradient get backgroundGradient {
     return isDark
         ? const LinearGradient(
-            colors: [Color(0xFF141923), Color(0xFF0A0D14)],
+            colors: [Color(0xFF14161C), Color(0xFF0F1014)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
         : const LinearGradient(
-            colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
+            colors: [Color(0xFFFAFAFA), Color(0xFFF0F2F5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           );
@@ -56,30 +56,30 @@ class ThemeProvider extends ChangeNotifier {
 
   Color get cardColor {
     return isDark
-        ? const Color(0xFF171F2C).withOpacity(0.8)
-        : const Color(0xFFFFFFFF).withOpacity(0.9);
+        ? const Color(0xFF1A1D24)
+        : const Color(0xFFFFFFFF);
   }
 
   Color get borderColor {
     return isDark
-        ? const Color(0xFF3B82F6).withOpacity(0.2)
-        : const Color(0xFFCBD5E1);
+        ? const Color(0xFF2E333F)
+        : const Color(0xFFE2E8F0);
   }
 
   Color get accentColor {
-    return const Color(0xFFE040FB); // Premium Pink/Magenta
+    return isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111317); // Original monochrome highlights (White for dark, Black for light)
   }
 
   Color get correctCharColor {
-    return isDark ? const Color(0xFF54A0FF) : const Color(0xFF0284C7); // Sky blue
+    return isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B); // Solid monochrome typed text
   }
 
   Color get incorrectCharColor {
-    return isDark ? const Color(0xFFFF5252) : const Color(0xFFDC2626); // Bright red
+    return isDark ? const Color(0xFFEF5350) : const Color(0xFFD32F2F); // Standard red indicators
   }
 
   Color get untypedCharColor {
-    return isDark ? const Color(0xFF637381) : const Color(0xFF94A3B8); // Muted slate gray
+    return isDark ? const Color(0xFF4E5766) : const Color(0xFF94A3B8); // Muted layout text
   }
 
   Color get textColor {
@@ -87,7 +87,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Color get subtextColor {
-    return isDark ? const Color(0xFF919EAB) : const Color(0xFF64748B);
+    return isDark ? const Color(0xFF718096) : const Color(0xFF64748B);
   }
 
   TextStyle getMonospaceTextStyle({double? fontSize, FontWeight fontWeight = FontWeight.normal}) {

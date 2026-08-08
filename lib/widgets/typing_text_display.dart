@@ -25,6 +25,7 @@ class TypingTextDisplay extends StatelessWidget {
     for (int i = 0; i < targetText.length; i++) {
       Color charColor;
       TextDecoration decoration = TextDecoration.none;
+      String displayText;
 
       // Insert animated blinking cursor at current position
       if (i == cursorIndex) {
@@ -42,17 +43,20 @@ class TypingTextDisplay extends StatelessWidget {
       if (i < typedText.length) {
         if (typedText[i] == targetText[i]) {
           charColor = themeProvider.correctCharColor;
+          displayText = targetText[i];
         } else {
           charColor = themeProvider.incorrectCharColor;
           decoration = TextDecoration.underline;
+          displayText = typedText[i];
         }
       } else {
         charColor = themeProvider.untypedCharColor;
+        displayText = targetText[i];
       }
 
       spans.add(
         TextSpan(
-          text: targetText[i],
+          text: displayText,
           style: themeProvider.getMonospaceTextStyle(fontSize: fontSize).copyWith(
                 color: charColor,
                 decoration: decoration,
