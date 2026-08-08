@@ -98,173 +98,224 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     
     final rank = _calculateRank(gameState.difficulty, gameState.elapsedTimeSec);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Scoreboard layout content
-          Container(
-            decoration: BoxDecoration(
-              gradient: themeProvider.backgroundGradient,
-            ),
-            child: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 850),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Top navigation action row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'IT TYPES REPORT',
-                              style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
-                                    letterSpacing: 1.0,
-                                  ),
-                            ),
-                            IconButton(
-                              icon: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                child: Icon(
-                                  themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
-                                  key: ValueKey<bool>(themeProvider.isDark),
-                                  color: themeProvider.textColor,
-                                  size: 20,
-                                ),
-                              ),
-                              onPressed: () => themeProvider.toggleTheme(),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Glowing Animated Rank Badge Celebration Card
-                        if (rank != 'Unranked')
-                          AnimatedBuilder(
-                            animation: _badgeAnimController,
-                            builder: (context, child) {
-                              return Transform.translate(
-                                offset: Offset(0, _badgeSlideAnim.value),
-                                child: Transform.scale(
-                                  scale: _badgeScaleAnim.value,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: _buildRankBadgeCard(context, rank),
-                          ),
-                        const SizedBox(height: 24),
-
-                        // Main Scoreboard: Split columns
-                        isMobile
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _buildBigStatsColumn(context),
-                                  const SizedBox(height: 28),
-                                  _buildChartCard(context),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width: 180,
-                                    child: _buildBigStatsColumn(context),
-                                  ),
-                                  const SizedBox(width: 32),
-                                  Expanded(
-                                    child: _buildChartCard(context),
-                                  ),
-                                ],
-                              ),
-                        const SizedBox(height: 40),
-
-                        // Details Ribbon (test type, raw, characters, consistency, time)
-                        _buildDetailsRibbon(context, rawWpm, consistency, rank),
-                        const SizedBox(height: 32),
-
-                        // Interactive Sign In / Session Save Status Banner
-                        Center(
-                          child: InkWell(
-                            onTap: gameState.isLoggedIn
-                                ? null
-                                : () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const AuthScreen()),
-                                    );
-                                  },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                              child: Text(
-                                gameState.isLoggedIn
-                                    ? 'Logged in as ${gameState.userName} (Result saved to dashboard)'
-                                    : 'Sign in to save your result',
-                                style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
-                                      color: themeProvider.subtextColor,
-                                      decoration: gameState.isLoggedIn ? TextDecoration.none : TextDecoration.underline,
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        final eventStr = event.runtimeType.toString();
+        if (eventStr.contains('Down')) {
+          final key = event.logicalKey.keyLabel.toLowerCase();
+          if (key == 'r') {
+            Navigator.pop(context);
+            return KeyEventResult.handled;
+          } else if (key == 'n') {
+            Navigator.pop(context);
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Scoreboard layout content
+            Container(
+              decoration: BoxDecoration(
+                gradient: themeProvider.backgroundGradient,
+              ),
+              child: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 850),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Top navigation action row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'IT TYPES REPORT',
+                                style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
+                                      letterSpacing: 1.0,
                                     ),
                               ),
-                            ),
+                              IconButton(
+                                icon: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  child: Icon(
+                                    themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
+                                    key: ValueKey<bool>(themeProvider.isDark),
+                                    color: themeProvider.textColor,
+                                    size: 20,
+                                  ),
+                                ),
+                                onPressed: () => themeProvider.toggleTheme(),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 32),
+                          const SizedBox(height: 18),
 
-                        // Bottom Navigation Shortcuts
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Repeat Test
-                            IconButton(
-                              icon: Icon(Icons.replay_rounded, color: themeProvider.subtextColor, size: 24),
-                              tooltip: 'Repeat Test',
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                            ),
-                            const SizedBox(width: 24),
-                            // Return Home
-                            IconButton(
-                              icon: Icon(Icons.arrow_forward_rounded, color: themeProvider.accentColor, size: 28),
-                              tooltip: 'Next Test',
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                            ),
-                            const SizedBox(width: 24),
-                            // Career Stats Screen
-                            IconButton(
-                              icon: Icon(Icons.bar_chart_rounded, color: themeProvider.subtextColor, size: 24),
-                              tooltip: 'Career Performance logs',
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const StatsScreen()),
+                          // Glowing Animated Rank Badge Celebration Card
+                          if (rank != 'Unranked')
+                            AnimatedBuilder(
+                              animation: _badgeAnimController,
+                              builder: (context, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, _badgeSlideAnim.value),
+                                  child: Transform.scale(
+                                    scale: _badgeScaleAnim.value,
+                                    child: child,
+                                  ),
                                 );
                               },
+                              child: _buildRankBadgeCard(context, rank),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                          const SizedBox(height: 24),
+
+                          // Main Scoreboard: Split columns
+                          isMobile
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildBigStatsColumn(context),
+                                    const SizedBox(height: 28),
+                                    _buildChartCard(context),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: 180,
+                                      child: _buildBigStatsColumn(context),
+                                    ),
+                                    const SizedBox(width: 32),
+                                    Expanded(
+                                      child: _buildChartCard(context),
+                                    ),
+                                  ],
+                                ),
+                          const SizedBox(height: 40),
+
+                          // Details Ribbon (test type, raw, characters, consistency, time)
+                          _buildDetailsRibbon(context, rawWpm, consistency, rank),
+                          const SizedBox(height: 32),
+
+                          // Interactive Sign In / Session Save Status Banner
+                          Center(
+                            child: InkWell(
+                              onTap: gameState.isLoggedIn
+                                  ? null
+                                  : () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const AuthScreen()),
+                                      );
+                                    },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                child: Text(
+                                  gameState.isLoggedIn
+                                      ? 'Logged in as ${gameState.userName} (Result saved to dashboard)'
+                                      : 'Sign in to save your result',
+                                  style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
+                                        color: themeProvider.subtextColor,
+                                        decoration: gameState.isLoggedIn ? TextDecoration.none : TextDecoration.underline,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Bottom Navigation Shortcuts
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Repeat Test
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.replay_rounded, color: themeProvider.subtextColor, size: 24),
+                                    tooltip: 'Repeat Test',
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                  Text(
+                                    'restart [R]',
+                                    style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
+                                          color: themeProvider.subtextColor,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 32),
+                              // Return Home / Next Test
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.arrow_forward_rounded, color: themeProvider.accentColor, size: 28),
+                                    tooltip: 'Next Test',
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                  Text(
+                                    'next test [N]',
+                                    style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
+                                          color: themeProvider.accentColor,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 32),
+                              // Career Stats Screen
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.bar_chart_rounded, color: themeProvider.subtextColor, size: 24),
+                                    tooltip: 'Career Performance logs',
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const StatsScreen()),
+                                      );
+                                    },
+                                  ),
+                                  Text(
+                                    'dashboard',
+                                    style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
+                                          color: themeProvider.subtextColor,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // Particle Confetti overlay
-          if (rank != 'Unranked')
-            const IgnorePointer(
-              child: ConfettiCelebration(),
-            ),
-        ],
+            // Particle Confetti overlay
+            if (rank != 'Unranked')
+              const IgnorePointer(
+                child: ConfettiCelebration(),
+              ),
+          ],
+        ),
       ),
     );
   }
