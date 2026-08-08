@@ -5,6 +5,7 @@ import '../providers/theme_provider.dart';
 import '../widgets/typing_text_display.dart';
 import '../widgets/virtual_keyboard.dart';
 import '../widgets/settings_drawer.dart';
+import 'auth_screen.dart';
 import 'results_screen.dart';
 import 'stats_screen.dart';
 
@@ -143,6 +144,76 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  void _showProfileDialog(BuildContext context, GameState gameState) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: themeProvider.backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: themeProvider.borderColor),
+          ),
+          title: Text(
+            'TYPIST ACCOUNT',
+            style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Username: ${gameState.userName}',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Email: ${gameState.userEmail}',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Result metrics are being saved automatically to your career performance logs.',
+                style: TextStyle(color: themeProvider.subtextColor, fontSize: 11),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'CLOSE',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 12).copyWith(
+                      color: themeProvider.subtextColor,
+                    ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeProvider.incorrectCharColor,
+              ),
+              onPressed: () {
+                gameState.logout();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged out successfully.')),
+                );
+              },
+              child: Text(
+                'LOGOUT',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 12, fontWeight: FontWeight.bold).copyWith(
+                      color: Colors.white,
+                    ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameState = Provider.of<GameState>(context);
@@ -184,6 +255,26 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                           Row(
                             children: [
+                              // Login / Account status shortcut button
+                              IconButton(
+                                icon: Icon(
+                                  gameState.isLoggedIn ? Icons.account_circle_rounded : Icons.login_rounded,
+                                  color: gameState.isLoggedIn ? themeProvider.accentColor : themeProvider.textColor,
+                                  size: 22,
+                                ),
+                                tooltip: gameState.isLoggedIn ? 'Logged in as ${gameState.userName}' : 'Sign in',
+                                onPressed: () {
+                                  if (gameState.isLoggedIn) {
+                                    _showProfileDialog(context, gameState);
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const AuthScreen()),
+                                    );
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 4),
                               IconButton(
                                 icon: Icon(Icons.bar_chart_rounded, color: themeProvider.textColor, size: 22),
                                 onPressed: () {
@@ -411,47 +502,31 @@ class _GameScreenState extends State<GameScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       child: Row(
         children: [
-          InkWell(
+          HoverOptionText(
+            prefix: '@',
+            text: 'punctuation',
+            isSelected: state.includePunctuation,
             onTap: () {
               state.togglePunctuation();
               state.initGame();
               _textController.clear();
               _focusNode.requestFocus();
             },
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                children: [
-                  Text('@', style: TextStyle(fontFamily: 'monospace', fontSize: 10, fontWeight: FontWeight.bold, color: state.includePunctuation ? themeProvider.accentColor : themeProvider.subtextColor)),
-                  const SizedBox(width: 3),
-                  Text('punctuation', style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(color: state.includePunctuation ? themeProvider.accentColor : themeProvider.subtextColor)),
-                ],
-              ),
-            ),
           ),
           const SizedBox(width: 4),
-          InkWell(
+          HoverOptionText(
+            prefix: '#',
+            text: 'numbers',
+            isSelected: state.includeNumbers,
             onTap: () {
               state.toggleNumbers();
               state.initGame();
               _textController.clear();
               _focusNode.requestFocus();
             },
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                children: [
-                  Text('#', style: TextStyle(fontFamily: 'monospace', fontSize: 10, fontWeight: FontWeight.bold, color: state.includeNumbers ? themeProvider.accentColor : themeProvider.subtextColor)),
-                  const SizedBox(width: 3),
-                  Text('numbers', style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(color: state.includeNumbers ? themeProvider.accentColor : themeProvider.subtextColor)),
-                ],
-              ),
-            ),
           ),
         ],
       ),
@@ -476,7 +551,7 @@ class _GameScreenState extends State<GameScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       child: Row(
         children: modesList.map((item) {
           final mode = item['mode'] as GameMode;
@@ -484,30 +559,16 @@ class _GameScreenState extends State<GameScreen> {
           final label = item['label'] as String;
           final icon = item['icon'] as IconData;
 
-          return InkWell(
+          return HoverOptionText(
+            icon: icon,
+            text: label,
+            isSelected: isSelected,
             onTap: () {
               state.setMode(mode);
               state.initGame();
               _textController.clear();
               _focusNode.requestFocus();
             },
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                children: [
-                  Icon(icon, size: 10, color: isSelected ? themeProvider.accentColor : themeProvider.subtextColor),
-                  const SizedBox(width: 3),
-                  Text(
-                    label,
-                    style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
-                          color: isSelected ? themeProvider.accentColor : themeProvider.subtextColor,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                  ),
-                ],
-              ),
-            ),
           );
         }).toList(),
       ),
@@ -536,8 +597,11 @@ class _GameScreenState extends State<GameScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      child: InkWell(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      child: HoverOptionText(
+        icon: Icons.tune_rounded,
+        text: 'diff: $label',
+        isSelected: true,
         onTap: () {
           final nextIndex = (state.difficulty.index + 1) % GameDifficulty.values.length;
           state.setDifficulty(GameDifficulty.values[nextIndex]);
@@ -545,22 +609,6 @@ class _GameScreenState extends State<GameScreen> {
           _textController.clear();
           _focusNode.requestFocus();
         },
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            children: [
-              Icon(Icons.tune_rounded, size: 10, color: themeProvider.accentColor),
-              const SizedBox(width: 4),
-              Text(
-                'diff: $label',
-                style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
-                      color: themeProvider.accentColor,
-                    ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -606,23 +654,12 @@ class _GameScreenState extends State<GameScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        child: InkWell(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+        child: HoverOptionText(
+          icon: Icons.edit_note_rounded,
+          text: 'PASTE TEXT',
+          isSelected: true,
           onTap: () => _showCustomTextDialog(context, state),
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Row(
-              children: [
-                Icon(Icons.edit_note_rounded, size: 12, color: themeProvider.accentColor),
-                const SizedBox(width: 3),
-                Text(
-                  'PASTE TEXT',
-                  style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
-                ),
-              ],
-            ),
-          ),
         ),
       );
     }
@@ -647,7 +684,9 @@ class _GameScreenState extends State<GameScreen> {
           final isSelected = val == currentValue;
           final String labelText = (state.mode == GameMode.timeAttack && val == 0) ? '∞' : '$val';
 
-          return InkWell(
+          return HoverOptionText(
+            text: labelText,
+            isSelected: isSelected,
             onTap: () {
               if (state.mode == GameMode.timeAttack) {
                 state.setTimeLimit(val);
@@ -658,17 +697,6 @@ class _GameScreenState extends State<GameScreen> {
               _textController.clear();
               _focusNode.requestFocus();
             },
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              alignment: Alignment.center,
-              child: Text(
-                labelText,
-                style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
-                      color: isSelected ? themeProvider.accentColor : themeProvider.subtextColor,
-                    ),
-              ),
-            ),
           );
         }).toList(),
       ),
@@ -757,6 +785,86 @@ class _GameScreenState extends State<GameScreen> {
       height: 20,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       color: themeProvider.borderColor.withOpacity(0.3),
+    );
+  }
+}
+
+// Reusable stateful widget to lighten configuration ribbon text options on mouse hover
+class HoverOptionText extends StatefulWidget {
+  final String text;
+  final String? prefix;
+  final IconData? icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const HoverOptionText({
+    super.key,
+    required this.text,
+    this.prefix,
+    this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<HoverOptionText> createState() => _HoverOptionTextState();
+}
+
+class _HoverOptionTextState extends State<HoverOptionText> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    Color color = widget.isSelected
+        ? themeProvider.accentColor
+        : _isHovered
+            ? themeProvider.textColor
+            : themeProvider.subtextColor;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.icon != null) ...[
+                Icon(
+                  widget.icon!,
+                  size: 10,
+                  color: color,
+                ),
+                const SizedBox(width: 4),
+              ],
+              if (widget.prefix != null) ...[
+                Text(
+                  widget.prefix!,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 3),
+              ],
+              Text(
+                widget.text,
+                style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
+                      color: color,
+                      fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
