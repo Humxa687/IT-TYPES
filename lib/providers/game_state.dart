@@ -9,6 +9,9 @@ enum GameMode {
   timeAttack,
   wordLimit,
   suddenDeath,
+  quote,
+  zen,
+  custom,
 }
 
 enum GameDifficulty {
@@ -23,6 +26,10 @@ class GameState extends ChangeNotifier {
   GameDifficulty _difficulty = GameDifficulty.easy;
   int _timeLimitSec = 30; // 0 (unlimited), 15, 30, 60, 120
   int _wordLimitCount = 25; // 10, 25, 50, 100
+
+  // Configuration options
+  bool _includePunctuation = false;
+  bool _includeNumbers = false;
 
   // Gameplay state
   String _targetText = '';
@@ -51,12 +58,15 @@ class GameState extends ChangeNotifier {
   // User Profile & Stats History (Persistent)
   String _userName = 'Typist';
   List<Map<String, dynamic>> _gameLogs = [];
+  String _customText = 'the quick brown fox jumps over the lazy dog';
 
   // Getters
   GameMode get mode => _mode;
   GameDifficulty get difficulty => _difficulty;
   int get timeLimitSec => _timeLimitSec;
   int get wordLimitCount => _wordLimitCount;
+  bool get includePunctuation => _includePunctuation;
+  bool get includeNumbers => _includeNumbers;
   String get targetText => _targetText;
   String get typedText => _typedText;
   bool get isPlaying => _isPlaying;
@@ -70,6 +80,7 @@ class GameState extends ChangeNotifier {
   String? get lastPressedKey => _lastPressedKey;
   String get userName => _userName;
   List<Map<String, dynamic>> get gameLogs => _gameLogs;
+  String get customText => _customText;
 
   // Structured Sentence Databases
   static const List<String> _easySentences = [
@@ -88,7 +99,7 @@ class GameState extends ChangeNotifier {
     'ten boys ran fast to the red gate.',
     'the wet grass was cold to my feet.',
     'we saw a fox run into the woods.',
-    'can you find the key to the door?',
+    'can you find the key to the door.',
     'she got a nice doll for her birth day.',
     'the man saw a black bug on his bag.',
     'the ship swam far out in the deep sea.',
@@ -147,17 +158,7 @@ class GameState extends ChangeNotifier {
     'coffee drinks taste really great during rainy days.',
     'travel agent books flight ticket toward sunny beach.',
     'brave soldiers defend their nation under royal flag.',
-    'clever rabbit escapes clever hunter inside dense bush.',
-    'winter nights bring cold winds across silent valley hills.',
-    'famous actors perform great drama on the theater stage.',
-    'forest rangers protect wild animals inside nature park.',
-    'bakers prepare fresh bakery items before sunrise hours.',
-    'bright lights shine above active sports fields.',
-    'farmers harvest yellow wheat crops during autumn season.',
-    'artist paints colorful picture using custom canvas board.',
-    'friendly neighbors share delicious dishes during summer picnic.',
-    'postal worker delivers letters inside local urban sector.',
-    'engineers develop modern vehicle using hybrid battery energy.'
+    'clever rabbit escapes clever hunter inside dense bush.'
   ];
 
   static const List<String> _hardSentences = [
@@ -175,12 +176,7 @@ class GameState extends ChangeNotifier {
     'architectural masterpieces combine historical aesthetic values with modern designs.',
     'fundamental principles guide ethical business administration decisions.',
     'international relations influence global political environments significantly.',
-    'educational institutions cultivate responsible citizenship values among youths.',
-    'creative writing represents therapeutic emotional expression for authors.',
-    'advanced algorithm optimizations improve system application speed dramatically.',
-    'collaborative teamwork achieves exceptional results in complex assignments.',
-    'strategic planning ensures successful product launch in competitive markets.',
-    'comprehensive assessment identifies critical engineering design vulnerabilities.'
+    'educational institutions cultivate responsible citizenship values among youths.'
   ];
 
   static const List<String> _codeSnippets = [
@@ -193,15 +189,39 @@ class GameState extends ChangeNotifier {
     'try {\n  await database.insert(record);\n} catch (e) {\n  print("Error: \$e");\n}'
   ];
 
+  static const List<String> _quotes = [
+    'life is what happens when you are busy making other plans.',
+    'the only way to do great work is to love what you do.',
+    'success is not final failure is not fatal it is the courage to continue that counts.',
+    'believe you can and you are halfway there.',
+    'do what you can with what you have where you are.',
+    'the journey of a thousand miles begins with one step.',
+    'that which does not kill us makes us stronger.',
+    'to be or not to be that is the question.',
+    'stay hungry stay foolish.',
+    'innovation distinguishes between a leader and a follower.',
+    'in the middle of difficulty lies opportunity.',
+    'knowledge is power.',
+    'happiness depends upon ourselves.',
+    'aim for the moon if you miss you may hit a star.',
+    'be the change that you wish to see in the world.',
+    'peace begins with a smile.',
+    'the mind is everything what you think you become.',
+    'you must be the change you wish to see in the world.',
+    'well begun is half done.',
+    'truth is stranger than fiction.'
+  ];
+
   GameState() {
     _loadUserData();
   }
 
-  // Load username & stats history
+  // Load userdata
   void _loadUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _userName = prefs.getString('userName') ?? 'Typist';
+      _customText = prefs.getString('customText') ?? 'the quick brown fox jumps over the lazy dog';
       final List<String>? logs = prefs.getStringList('gameLogs');
       if (logs != null) {
         _gameLogs = logs.map((log) => Map<String, dynamic>.from(jsonDecode(log))).toList();
@@ -212,7 +232,7 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  // Save score logs
+  // Save scoring history
   void _saveGameLog() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -232,7 +252,7 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  // Update userName
+  // Setters
   void setUserName(String name) async {
     _userName = name.trim().isEmpty ? 'Typist' : name.trim();
     notifyListeners();
@@ -244,7 +264,17 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  // Clear stats history
+  void setCustomText(String text) async {
+    _customText = text.trim().isEmpty ? 'the quick brown fox jumps over the lazy dog' : text.trim();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('customText', _customText);
+    } catch (e) {
+      debugPrint('Error saving customText: $e');
+    }
+  }
+
   void resetStatistics() async {
     _gameLogs.clear();
     notifyListeners();
@@ -256,7 +286,17 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  // Sound effects trigger
+  void togglePunctuation() {
+    _includePunctuation = !_includePunctuation;
+    notifyListeners();
+  }
+
+  void toggleNumbers() {
+    _includeNumbers = !_includeNumbers;
+    notifyListeners();
+  }
+
+  // Sound effects
   void _playAudioEffect(String type) {
     if (!_isSoundEnabled) return;
     try {
@@ -278,7 +318,6 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  // Keyboard highlight trigger
   void _triggerKeyHighlight(String key) {
     _keyHighlightTimer?.cancel();
     _lastPressedKey = key.toLowerCase();
@@ -290,7 +329,6 @@ class GameState extends ChangeNotifier {
     });
   }
 
-  // Configuration changes
   void setMode(GameMode mode) {
     _mode = mode;
     notifyListeners();
@@ -340,7 +378,7 @@ class GameState extends ChangeNotifier {
     return max(0, _timeLimitSec - _elapsedTimeSec);
   }
 
-  // Initialize a new gameplay session
+  // Initialize gameplay session
   void initGame() {
     _timer?.cancel();
     _keyHighlightTimer?.cancel();
@@ -358,18 +396,74 @@ class GameState extends ChangeNotifier {
 
   void _generateTargetText() {
     final rand = Random();
+    
+    // Code difficulty handles code blocks directly
     if (_difficulty == GameDifficulty.code) {
       _targetText = _codeSnippets[rand.nextInt(_codeSnippets.length)];
       return;
     }
 
-    if (_difficulty == GameDifficulty.easy) {
-      _targetText = _easySentences[rand.nextInt(_easySentences.length)];
-    } else if (_difficulty == GameDifficulty.medium) {
-      _targetText = _mediumSentences[rand.nextInt(_mediumSentences.length)];
-    } else if (_difficulty == GameDifficulty.hard) {
-      _targetText = _hardSentences[rand.nextInt(_hardSentences.length)];
+    String baseText = '';
+
+    if (_mode == GameMode.custom) {
+      baseText = _customText;
+    } else if (_mode == GameMode.quote) {
+      baseText = _quotes[rand.nextInt(_quotes.length)];
+    } else {
+      // Pick random sentence by difficulty
+      if (_difficulty == GameDifficulty.easy) {
+        baseText = _easySentences[rand.nextInt(_easySentences.length)];
+      } else if (_difficulty == GameDifficulty.medium) {
+        baseText = _mediumSentences[rand.nextInt(_mediumSentences.length)];
+      } else if (_difficulty == GameDifficulty.hard) {
+        baseText = _hardSentences[rand.nextInt(_hardSentences.length)];
+      }
     }
+
+    _targetText = _applyPunctuationAndNumbers(baseText);
+  }
+
+  String _applyPunctuationAndNumbers(String text) {
+    if (!_includePunctuation && !_includeNumbers) return text.toLowerCase();
+
+    List<String> words = text.split(' ');
+    final rand = Random();
+
+    for (int i = 0; i < words.length; i++) {
+      String word = words[i];
+
+      // Apply numbers
+      if (_includeNumbers && rand.nextDouble() < 0.12) {
+        words[i] = '${rand.nextInt(100)}';
+        continue;
+      }
+
+      // Apply capitalization
+      if (_includePunctuation && (i == 0 || rand.nextDouble() < 0.12)) {
+        if (word.isNotEmpty) {
+          word = word[0].toUpperCase() + word.substring(1);
+        }
+      }
+
+      // Apply punctuation marks
+      if (_includePunctuation && rand.nextDouble() < 0.1) {
+        final punc = rand.nextDouble();
+        if (punc < 0.6) {
+          word += '.';
+        } else if (punc < 0.85) {
+          word += ',';
+        } else {
+          word += '?';
+        }
+      }
+      words[i] = word;
+    }
+    
+    String result = words.join(' ');
+    if (_includePunctuation && !result.endsWith('.')) {
+      result += '.';
+    }
+    return result;
   }
 
   // Handle keystroke inputs
@@ -442,7 +536,6 @@ class GameState extends ChangeNotifier {
       _elapsedTimeSec++;
       _wpmHistory.add(wpm);
 
-      // End game if countdown timer finishes (only if not unlimited/0)
       if (_mode == GameMode.timeAttack && _timeLimitSec > 0 && _elapsedTimeSec >= _timeLimitSec) {
         _endGame();
       }
@@ -453,7 +546,15 @@ class GameState extends ChangeNotifier {
 
   void _checkCompletion() {
     if (_typedText.length >= _targetText.length) {
-      _endGame();
+      if (_mode == GameMode.zen) {
+        // Zen mode loop: complete text, automatically generate new one, clear progress, and continue typing
+        _generateTargetText();
+        _typedText = '';
+        _recalculateStats();
+        _playAudioEffect('success');
+      } else {
+        _endGame();
+      }
     }
   }
 

@@ -63,7 +63,8 @@ class _GameScreenState extends State<GameScreen> {
       );
     }
 
-    if (state.isFinished) {
+    // Skip results page push in Zen mode
+    if (state.isFinished && state.mode != GameMode.zen) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ResultsScreen()),
@@ -299,6 +300,23 @@ class _GameScreenState extends State<GameScreen> {
     final gameState = Provider.of<GameState>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
 
+    // Zen mode stopwatch shows count-up elapsed time
+    final String timeLabel = gameState.mode == GameMode.zen
+        ? '${gameState.elapsedTimeSec}s'
+        : (gameState.mode == GameMode.timeAttack && gameState.timeLimitSec == 0)
+            ? '${gameState.elapsedTimeSec}s'
+            : gameState.mode == GameMode.timeAttack
+                ? '${gameState.remainingSeconds}s'
+                : '${gameState.typedText.length}/${gameState.targetText.length}';
+
+    final String timeTitle = gameState.mode == GameMode.zen
+        ? 'ELAPSED'
+        : (gameState.mode == GameMode.timeAttack && gameState.timeLimitSec == 0)
+            ? 'ELAPSED'
+            : gameState.mode == GameMode.timeAttack
+                ? 'TIME LEFT'
+                : 'TYPED';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -318,10 +336,8 @@ class _GameScreenState extends State<GameScreen> {
         _verticalDivider(context),
         _ribbonTile(
           context,
-          gameState.mode == GameMode.timeAttack
-              ? '${gameState.remainingSeconds}s'
-              : '${gameState.typedText.length}/${gameState.targetText.length}',
-          gameState.mode == GameMode.timeAttack ? 'TIME LEFT' : 'TYPED',
+          timeLabel,
+          timeTitle,
           themeProvider.textColor,
         ),
       ],
