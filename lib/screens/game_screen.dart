@@ -627,7 +627,7 @@ class _GameScreenState extends State<GameScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
           'ZEN MODE',
-          style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
+          style: themeProvider.getMonospaceTextStyle(fontSize: 12, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
         ),
       );
     }
@@ -642,7 +642,7 @@ class _GameScreenState extends State<GameScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
           'FAMOUS QUOTES',
-          style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
+          style: themeProvider.getMonospaceTextStyle(fontSize: 12, fontWeight: FontWeight.bold).copyWith(color: themeProvider.accentColor),
         ),
       );
     }
@@ -837,7 +837,7 @@ class _HoverOptionTextState extends State<HoverOptionText> {
               if (widget.icon != null) ...[
                 Icon(
                   widget.icon!,
-                  size: 10,
+                  size: 13,
                   color: color,
                 ),
                 const SizedBox(width: 4),
@@ -847,7 +847,7 @@ class _HoverOptionTextState extends State<HoverOptionText> {
                   widget.prefix!,
                   style: TextStyle(
                     fontFamily: 'monospace',
-                    fontSize: 10,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -856,7 +856,7 @@ class _HoverOptionTextState extends State<HoverOptionText> {
               ],
               Text(
                 widget.text,
-                style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
+                style: themeProvider.getMonospaceTextStyle(fontSize: 12).copyWith(
                       color: color,
                       fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
                     ),

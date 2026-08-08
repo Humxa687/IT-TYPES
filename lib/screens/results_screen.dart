@@ -376,19 +376,19 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     if (rank == 'Diamond') {
       glowColor = const Color(0xFF00E5FF);
       badgeEmoji = '💎';
-      rankName = 'DIAMOND TYPIST';
+      rankName = 'DIAMOND RANK';
     } else if (rank == 'Gold') {
       glowColor = const Color(0xFFFFC107);
       badgeEmoji = '🥇';
-      rankName = 'GOLD TYPIST';
+      rankName = 'GOLD RANK';
     } else if (rank == 'Silver') {
       glowColor = const Color(0xFF90A4AE);
       badgeEmoji = '🥈';
-      rankName = 'SILVER TYPIST';
+      rankName = 'SILVER RANK';
     } else {
       glowColor = const Color(0xFFFF7043);
       badgeEmoji = '🥉';
-      rankName = 'BRONZE TYPIST';
+      rankName = 'BRONZE RANK';
     }
 
     return Center(
@@ -425,7 +425,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                 const SizedBox(height: 2),
                 Text(
                   rankName,
-                  style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
+                  style: themeProvider.getHeadingStyle(fontSize: 26, fontWeight: FontWeight.bold).copyWith(
                         color: glowColor,
                         letterSpacing: 0.8,
                       ),
@@ -518,10 +518,12 @@ class ConfettiParticle {
   });
 
   void update() {
-    x += vx;
+    double wind = sin(y / 40.0) * 0.35;
+    x += vx + wind;
+    vy += 0.06; // gravity speed
     y += vy;
     rotation += vr;
-    opacity = (opacity - 0.006).clamp(0.0, 1.0);
+    opacity = (opacity - 0.0045).clamp(0.0, 1.0);
   }
 }
 
@@ -559,9 +561,6 @@ class _ConfettiCelebrationState extends State<ConfettiCelebration> with SingleTi
     if (_initialized) return;
     _initialized = true;
 
-    final centerX = width / 2;
-    final centerY = height / 2;
-
     final colors = [
       const Color(0xFF00E5FF),
       const Color(0xFFFFC107),
@@ -571,20 +570,17 @@ class _ConfettiCelebrationState extends State<ConfettiCelebration> with SingleTi
       const Color(0xFF29B6F6),
     ];
 
-    // Spawn 100 particles bursting radially from center
+    // Spawn 100 particles falling from top
     for (int i = 0; i < 100; i++) {
-      double angle = _rand.nextDouble() * 2 * pi;
-      double speed = 1.0 + _rand.nextDouble() * 7.0;
-
       _particles.add(ConfettiParticle(
-        x: centerX,
-        y: centerY,
-        size: 4.0 + _rand.nextDouble() * 7.0,
+        x: _rand.nextDouble() * width,
+        y: -30.0 - _rand.nextDouble() * 350.0,
+        size: 5.0 + _rand.nextDouble() * 8.0,
         color: colors[_rand.nextInt(colors.length)],
-        vx: cos(angle) * speed,
-        vy: sin(angle) * speed,
+        vx: -2.0 + _rand.nextDouble() * 4.0,
+        vy: 1.0 + _rand.nextDouble() * 4.0,
         rotation: _rand.nextDouble() * pi,
-        vr: -0.1 + _rand.nextDouble() * 0.2,
+        vr: -0.06 + _rand.nextDouble() * 0.12,
         isSquare: _rand.nextBool(),
       ));
     }
@@ -618,20 +614,23 @@ class ConfettiPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var p in particles) {
-      if (p.x < 0 || p.x > size.width || p.y > size.height || p.opacity <= 0.0) continue;
+      if (p.x < -20 || p.x > size.width + 20 || p.y > size.height || p.opacity <= 0.0) continue;
 
       final paint = Paint()
         ..color = p.color.withOpacity(p.opacity)
         ..style = PaintingStyle.fill;
+
+      // 3D paper tumbling calculation: width scales down to 0 and back as it flips
+      double scaleX = cos(p.rotation);
 
       canvas.save();
       canvas.translate(p.x, p.y);
       canvas.rotate(p.rotation);
 
       if (p.isSquare) {
-        canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size), paint);
+        canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: p.size * scaleX, height: p.size), paint);
       } else {
-        canvas.drawCircle(Offset.zero, p.size / 2, paint);
+        canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: p.size * scaleX, height: p.size), paint);
       }
 
       canvas.restore();

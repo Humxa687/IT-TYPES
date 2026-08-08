@@ -70,7 +70,70 @@ class SettingsDrawer extends StatelessWidget {
                       ListView(
                         padding: const EdgeInsets.all(20.0),
                         children: [
-                          // Dynamic Font Sizing (Stacked vertically to prevent overlay!)
+                          // Color Themes Swatches Grid
+                          _buildSectionHeader(context, 'COLOR THEMES'),
+                          const SizedBox(height: 10),
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 2.1,
+                            children: AppThemePreset.values.map((preset) {
+                              final isSelected = themeProvider.currentTheme == preset;
+                              final name = preset.name
+                                  .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m.group(0)}')
+                                  .toLowerCase();
+                              final colors = themeProvider.getThemeColors(preset);
+
+                              return InkWell(
+                                onTap: () => themeProvider.setTheme(preset),
+                                borderRadius: BorderRadius.circular(14),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  decoration: BoxDecoration(
+                                    color: themeProvider.cardColor,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: isSelected ? themeProvider.accentColor : themeProvider.borderColor,
+                                      width: isSelected ? 2.0 : 1.0,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        name,
+                                        style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(
+                                              color: isSelected ? themeProvider.accentColor : themeProvider.textColor,
+                                            ),
+                                      ),
+                                      Row(
+                                        children: colors.map((col) {
+                                          return Container(
+                                            width: 10,
+                                            height: 10,
+                                            margin: const EdgeInsets.only(right: 4),
+                                            decoration: BoxDecoration(
+                                              color: col,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: Colors.grey.withOpacity(0.3), width: 0.5),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Dynamic Font Sizing
                           _buildSectionHeader(context, 'TYPING TEXT SIZE'),
                           const SizedBox(height: 12),
                           Container(
@@ -97,7 +160,6 @@ class SettingsDrawer extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 14),
-                                // Preview on its own row to avoid overlapping
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -124,7 +186,6 @@ class SettingsDrawer extends StatelessWidget {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 24),
 
                           // Typography Font Family selection
@@ -150,7 +211,7 @@ class SettingsDrawer extends StatelessWidget {
                       ListView(
                         padding: const EdgeInsets.all(20.0),
                         children: [
-                          // Audio settings (Keystroke toggle + volume slider)
+                          // Audio settings
                           _buildSectionHeader(context, 'AUDIO EFFECTS'),
                           const SizedBox(height: 12),
                           Container(
@@ -205,7 +266,6 @@ class SettingsDrawer extends StatelessWidget {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 24),
 
                           // Reset Statistics
@@ -232,7 +292,6 @@ class SettingsDrawer extends StatelessWidget {
                                   ),
                             ),
                           ),
-
                           const SizedBox(height: 24),
 
                           // App Updates
@@ -246,7 +305,7 @@ class SettingsDrawer extends StatelessWidget {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             onPressed: () async {
-                              final Uri url = Uri.parse('https://github.com/humza/ittypes/releases');
+                              final Uri url = Uri.parse('https://github.com/Humxa687/IT-TYPES/releases');
                               try {
                                 await launchUrl(url, mode: LaunchMode.externalApplication);
                               } catch (e) {
