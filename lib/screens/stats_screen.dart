@@ -155,6 +155,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                 ),
                                 const SizedBox(height: 20),
 
+                                // WPM Progress curve chart
+                                _buildCareerChartCard(context, logs),
+                                const SizedBox(height: 20),
+
                                 // Career Summary Statistics Row
                                 Row(
                                   children: [
@@ -341,6 +345,61 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCareerChartCard(BuildContext context, List<Map<String, dynamic>> logs) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    // If actual history logs are empty, use cool mock values to display a preview!
+    final List<double> wpmData = logs.isEmpty
+        ? [42.0, 48.0, 58.0, 52.0, 68.0, 74.0, 71.0, 84.0]
+        : logs.map((log) => (log['wpm'] as num).toDouble()).toList();
+
+    final isMock = logs.isEmpty;
+
+    return Container(
+      height: 180,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: themeProvider.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: themeProvider.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isMock ? 'CAREER PROGRESS GRAPH (PREVIEW)' : 'CAREER PROGRESS GRAPH',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 10, fontWeight: FontWeight.bold).copyWith(
+                      color: themeProvider.accentColor,
+                      letterSpacing: 0.8,
+                    ),
+              ),
+              Text(
+                'WPM / Run',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
+                      color: themeProvider.subtextColor,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: CustomPaint(
+              painter: CareerProgressChartPainter(
+                history: wpmData,
+                accentColor: isMock ? themeProvider.accentColor.withOpacity(0.3) : themeProvider.accentColor,
+                gridColor: themeProvider.borderColor.withOpacity(0.4),
+                textColor: themeProvider.subtextColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -551,4 +610,105 @@ class _StatsScreenState extends State<StatsScreen> {
       },
     );
   }
+}
+
+// Custom Painter to render career performance curves over sessions
+class CareerProgressChartPainter extends CustomPainter {
+  final List<double> history;
+  final Color accentColor;
+  final Color gridColor;
+  final Color textColor;
+
+  CareerProgressChartPainter({
+    required this.history,
+    required this.accentColor,
+    required this.gridColor,
+    required this.textColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (history.isEmpty) return;
+
+    final paintLine = Paint()
+      ..color = accentColor
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final paintFill = Paint()
+      ..color = accentColor.withOpacity(0.08)
+      ..style = PaintingStyle.fill;
+
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+
+    // Draw horizontal grid lines
+    const int gridRows = 3;
+    for (int i = 0; i <= gridRows; i++) {
+      double y = size.height * i / gridRows;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    double maxWpm = history.reduce(max);
+    double minWpm = history.reduce(min);
+    if (maxWpm == minWpm) {
+      maxWpm += 20;
+      minWpm = max(0.0, minWpm - 20);
+    }
+    double range = maxWpm - minWpm;
+    if (range <= 0) range = 40.0;
+
+    double dx = size.width / (history.length > 1 ? history.length - 1 : 1);
+
+    final path = Path();
+    final fillPath = Path();
+
+    for (int i = 0; i < history.length; i++) {
+      double x = i * dx;
+      double normalized = (history[i] - minWpm) / range;
+      double y = size.height - (normalized * size.height * 0.8 + size.height * 0.1);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+        fillPath.moveTo(x, size.height);
+        fillPath.lineTo(x, y);
+      } else {
+        path.lineTo(x, y);
+        fillPath.lineTo(x, y);
+      }
+    }
+
+    fillPath.lineTo(size.width, size.height);
+    fillPath.close();
+
+    canvas.drawPath(fillPath, paintFill);
+    canvas.drawPath(path, paintLine);
+
+    // Draw boundary markers text
+    final textMax = TextPainter(
+      text: TextSpan(
+        text: '${maxWpm.toInt()} WPM',
+        style: TextStyle(color: textColor, fontSize: 8, fontFamily: 'monospace'),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textMax.layout();
+    textMax.paint(canvas, const Offset(4, 2));
+
+    final textMin = TextPainter(
+      text: TextSpan(
+        text: '${minWpm.toInt()} WPM',
+        style: TextStyle(color: textColor, fontSize: 8, fontFamily: 'monospace'),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textMin.layout();
+    textMin.paint(canvas, Offset(4, size.height - 12));
+  }
+
+  @override
+  bool shouldRepaint(covariant CareerProgressChartPainter oldDelegate) => true;
 }

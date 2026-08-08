@@ -16,29 +16,27 @@ class ThemeProvider extends ChangeNotifier {
   AppThemePreset _currentTheme = AppThemePreset.serikaDark;
   double _fontSize = 20.0;
   String _fontFamily = 'monospace'; // 'monospace', 'sans-serif', 'serif'
+  bool _isLightMode = false;
 
   AppThemePreset get currentTheme => _currentTheme;
   double get fontSize => _fontSize;
   String get fontFamily => _fontFamily;
+  bool get isLightMode => _isLightMode;
 
-  bool get isDark {
-    return _currentTheme == AppThemePreset.serikaDark ||
-        _currentTheme == AppThemePreset.carbon ||
-        _currentTheme == AppThemePreset.dracula ||
-        _currentTheme == AppThemePreset.nord;
-  }
+  bool get isDark => !_isLightMode;
 
   void setTheme(AppThemePreset preset) {
     _currentTheme = preset;
+    // Set default light/dark mode alignment matching preset defaults
+    _isLightMode = preset == AppThemePreset.serikaLight ||
+        preset == AppThemePreset.paper ||
+        preset == AppThemePreset.solarizedLight ||
+        preset == AppThemePreset.cream;
     notifyListeners();
   }
 
   void toggleTheme() {
-    if (isDark) {
-      _currentTheme = AppThemePreset.serikaLight;
-    } else {
-      _currentTheme = AppThemePreset.serikaDark;
-    }
+    _isLightMode = !_isLightMode;
     notifyListeners();
   }
 
@@ -52,8 +50,11 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Retrieve Theme Colors
+  // Retrieve Theme Colors (Respect decoupled Light Mode appearance overrides)
   Color get backgroundColor {
+    if (_isLightMode) {
+      return const Color(0xFFFAFAFA);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFF111317);
@@ -63,18 +64,19 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFF282A36);
       case AppThemePreset.nord:
         return const Color(0xFF2E3440);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFFFAFAFA);
-      case AppThemePreset.paper:
-        return const Color(0xFFF0EFEA);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFFFDF6E3);
-      case AppThemePreset.cream:
-        return const Color(0xFFFFFDD0);
+      default:
+        return const Color(0xFF111317);
     }
   }
 
   Gradient get backgroundGradient {
+    if (_isLightMode) {
+      return const LinearGradient(
+        colors: [Color(0xFFFAFAFA), Color(0xFFF0F2F5)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const LinearGradient(colors: [Color(0xFF14161C), Color(0xFF0F1014)], begin: Alignment.topLeft, end: Alignment.bottomRight);
@@ -84,18 +86,15 @@ class ThemeProvider extends ChangeNotifier {
         return const LinearGradient(colors: [Color(0xFF2C2F3F), Color(0xFF1E2029)], begin: Alignment.topLeft, end: Alignment.bottomRight);
       case AppThemePreset.nord:
         return const LinearGradient(colors: [Color(0xFF343B49), Color(0xFF272C35)], begin: Alignment.topLeft, end: Alignment.bottomRight);
-      case AppThemePreset.serikaLight:
-        return const LinearGradient(colors: [Color(0xFFFAFAFA), Color(0xFFF0F2F5)], begin: Alignment.topLeft, end: Alignment.bottomRight);
-      case AppThemePreset.paper:
-        return const LinearGradient(colors: [Color(0xFFFAF9F6), Color(0xFFE9E8E2)], begin: Alignment.topLeft, end: Alignment.bottomRight);
-      case AppThemePreset.solarizedLight:
-        return const LinearGradient(colors: [Color(0xFFFFFDF5), Color(0xFFF0EAD6)], begin: Alignment.topLeft, end: Alignment.bottomRight);
-      case AppThemePreset.cream:
-        return const LinearGradient(colors: [Color(0xFFFFFFE0), Color(0xFFFDF5E6)], begin: Alignment.topLeft, end: Alignment.bottomRight);
+      default:
+        return const LinearGradient(colors: [Color(0xFF14161C), Color(0xFF0F1014)], begin: Alignment.topLeft, end: Alignment.bottomRight);
     }
   }
 
   Color get cardColor {
+    if (_isLightMode) {
+      return const Color(0xFFFFFFFF);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFF1A1D24);
@@ -105,18 +104,15 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFF1E1F29);
       case AppThemePreset.nord:
         return const Color(0xFF3B4252);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFFFFFFFF);
-      case AppThemePreset.paper:
-        return const Color(0xFFFAF9F5);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFFEEE8D5);
-      case AppThemePreset.cream:
-        return const Color(0xFFFFF8C4);
+      default:
+        return const Color(0xFF1A1D24);
     }
   }
 
   Color get borderColor {
+    if (_isLightMode) {
+      return const Color(0xFFE2E8F0);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFF2E333F);
@@ -126,17 +122,12 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFF44475A);
       case AppThemePreset.nord:
         return const Color(0xFF4C566A);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFFE2E8F0);
-      case AppThemePreset.paper:
-        return const Color(0xFFD3D0C9);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFF93A1A1);
-      case AppThemePreset.cream:
-        return const Color(0xFFEEDC82);
+      default:
+        return const Color(0xFF2E333F);
     }
   }
 
+  // AccentColor (Secondary Color Highlight) always remains locked as per selection!
   Color get accentColor {
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
@@ -159,6 +150,9 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Color get correctCharColor {
+    if (_isLightMode) {
+      return const Color(0xFF1E293B);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFFECEFF1);
@@ -168,18 +162,15 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFFF8F8F2);
       case AppThemePreset.nord:
         return const Color(0xFFECEFF4);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFF1E293B);
-      case AppThemePreset.paper:
-        return const Color(0xFF4A463F);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFF586E75);
-      case AppThemePreset.cream:
-        return const Color(0xFF3E2723);
+      default:
+        return const Color(0xFFECEFF1);
     }
   }
 
   Color get incorrectCharColor {
+    if (_isLightMode) {
+      return const Color(0xFFD32F2F);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFFEF5350);
@@ -189,18 +180,15 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFFFF5555);
       case AppThemePreset.nord:
         return const Color(0xFFBF616A);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFFD32F2F);
-      case AppThemePreset.paper:
-        return const Color(0xFFB84444);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFFDC322F);
-      case AppThemePreset.cream:
-        return const Color(0xFFC62828);
+      default:
+        return const Color(0xFFEF5350);
     }
   }
 
   Color get untypedCharColor {
+    if (_isLightMode) {
+      return const Color(0xFF94A3B8);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFF4E5766);
@@ -210,18 +198,15 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFF6272A4);
       case AppThemePreset.nord:
         return const Color(0xFF4C566A);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFF94A3B8);
-      case AppThemePreset.paper:
-        return const Color(0xFF8F8B83);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFF93A1A1);
-      case AppThemePreset.cream:
-        return const Color(0xFFB0A26B);
+      default:
+        return const Color(0xFF4E5766);
     }
   }
 
   Color get textColor {
+    if (_isLightMode) {
+      return const Color(0xFF0F172A);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFFF1F5F9);
@@ -231,18 +216,15 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFFF8F8F2);
       case AppThemePreset.nord:
         return const Color(0xFFECEFF4);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFF0F172A);
-      case AppThemePreset.paper:
-        return const Color(0xFF2C2A26);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFF073642);
-      case AppThemePreset.cream:
-        return const Color(0xFF4E342E);
+      default:
+        return const Color(0xFFF1F5F9);
     }
   }
 
   Color get subtextColor {
+    if (_isLightMode) {
+      return const Color(0xFF64748B);
+    }
     switch (_currentTheme) {
       case AppThemePreset.serikaDark:
         return const Color(0xFF718096);
@@ -252,14 +234,8 @@ class ThemeProvider extends ChangeNotifier {
         return const Color(0xFF6272A4);
       case AppThemePreset.nord:
         return const Color(0xFF6D8096);
-      case AppThemePreset.serikaLight:
-        return const Color(0xFF64748B);
-      case AppThemePreset.paper:
-        return const Color(0xFF7D7872);
-      case AppThemePreset.solarizedLight:
-        return const Color(0xFF657B83);
-      case AppThemePreset.cream:
-        return const Color(0xFF8D6E63);
+      default:
+        return const Color(0xFF718096);
     }
   }
 
