@@ -96,7 +96,9 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     final consistency = _calculateConsistency(gameState.wpmHistory);
     final isMobile = MediaQuery.of(context).size.width < 700;
     
-    final rank = _calculateRank(gameState.difficulty, gameState.elapsedTimeSec);
+    final rank = (gameState.mode == GameMode.timeAttack && (gameState.timeLimitSec == 15 || gameState.timeLimitSec == 30))
+        ? 'Unranked'
+        : _calculateRank(gameState.difficulty, gameState.elapsedTimeSec);
 
     return Focus(
       autofocus: true,

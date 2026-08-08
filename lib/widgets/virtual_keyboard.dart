@@ -8,6 +8,11 @@ class VirtualKeyboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    if (isMobile) {
+      return const SizedBox.shrink();
+    }
+
     final gameState = Provider.of<GameState>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
 

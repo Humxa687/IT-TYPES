@@ -350,49 +350,32 @@ class _GameScreenState extends State<GameScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // Sleek Minimalist Stats & Sizing Ribbon
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(child: _buildMinimalStatsRibbon(context)),
-                                  // Inline Font Size Adjustment (A- / A+)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: themeProvider.backgroundColor.withOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
+                              // Sleek Minimalist Stats & Sizing Ribbon
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final isMobileWidth = MediaQuery.of(context).size.width < 600;
+                                  if (isMobileWidth) {
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        IconButton(
-                                          icon: Icon(Icons.text_decrease_rounded, color: themeProvider.subtextColor, size: 14),
-                                          constraints: const BoxConstraints(),
-                                          padding: const EdgeInsets.all(4),
-                                          onPressed: () {
-                                            themeProvider.setFontSize(themeProvider.fontSize - 2);
-                                          },
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${themeProvider.fontSize.toInt()}px',
-                                          style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
-                                                color: themeProvider.textColor,
-                                              ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        IconButton(
-                                          icon: Icon(Icons.text_increase_rounded, color: themeProvider.subtextColor, size: 14),
-                                          constraints: const BoxConstraints(),
-                                          padding: const EdgeInsets.all(4),
-                                          onPressed: () {
-                                            themeProvider.setFontSize(themeProvider.fontSize + 2);
-                                          },
+                                        _buildMinimalStatsRibbon(context),
+                                        const SizedBox(height: 10),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: _buildFontSizeSelector(context),
                                         ),
                                       ],
-                                    ),
-                                  ),
-                                ],
+                                    );
+                                  } else {
+                                    return Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(child: _buildMinimalStatsRibbon(context)),
+                                        _buildFontSizeSelector(context),
+                                      ],
+                                    );
+                                  }
+                                },
                               ),
                               const SizedBox(height: 12),
                               Container(height: 1.0, color: themeProvider.borderColor.withOpacity(0.3)),
@@ -703,6 +686,47 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Widget _buildFontSizeSelector(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.text_decrease_rounded, color: themeProvider.subtextColor, size: 14),
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(4),
+            onPressed: () {
+              themeProvider.setFontSize(themeProvider.fontSize - 2);
+            },
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${themeProvider.fontSize.toInt()}px',
+            style: themeProvider.getMonospaceTextStyle(fontSize: 11, fontWeight: FontWeight.bold).copyWith(
+                  color: themeProvider.textColor,
+                ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: Icon(Icons.text_increase_rounded, color: themeProvider.subtextColor, size: 14),
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(4),
+            onPressed: () {
+              themeProvider.setFontSize(themeProvider.fontSize + 2);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMinimalStatsRibbon(BuildContext context) {
     final gameState = Provider.of<GameState>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -752,6 +776,8 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _ribbonTile(BuildContext context, String value, String label, Color color) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -760,16 +786,16 @@ class _GameScreenState extends State<GameScreen> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 22,
+            fontSize: isMobile ? 16 : 22,
             fontWeight: FontWeight.bold,
             color: color,
             fontFamily: 'monospace',
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         Text(
           label.toUpperCase(),
-          style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
+          style: themeProvider.getMonospaceTextStyle(fontSize: isMobile ? 8 : 10).copyWith(
                 color: themeProvider.subtextColor,
                 letterSpacing: 0.5,
               ),
@@ -780,10 +806,12 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _verticalDivider(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Container(
       width: 1.5,
       height: 20,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16),
       color: themeProvider.borderColor.withOpacity(0.3),
     );
   }
