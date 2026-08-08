@@ -18,7 +18,7 @@ void main() {
       ),
     );
 
-    // Verify that the restart shortcut guide exists.
-    expect(find.text('tab - restart test'), findsOneWidget);
+    // Verify that the it types header branding exists.
+    expect(find.text('it types'), findsOneWidget);
   });
 }

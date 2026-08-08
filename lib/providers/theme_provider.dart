@@ -14,7 +14,7 @@ enum AppThemePreset {
 
 class ThemeProvider extends ChangeNotifier {
   AppThemePreset _currentTheme = AppThemePreset.serikaDark;
-  double _fontSize = 20.0;
+  double _fontSize = 24.0;
   String _fontFamily = 'monospace'; // 'monospace', 'sans-serif', 'serif'
   bool _isLightMode = false;
 
@@ -269,6 +269,7 @@ class ThemeProvider extends ChangeNotifier {
         fontWeight: fontWeight,
         color: textColor,
         letterSpacing: 0.5,
+        height: 1.5,
       );
     } else if (_fontFamily == 'serif') {
       return GoogleFonts.merriweather(
@@ -276,6 +277,7 @@ class ThemeProvider extends ChangeNotifier {
         fontWeight: fontWeight,
         color: textColor,
         letterSpacing: 0.5,
+        height: 1.5,
       );
     } else {
       return GoogleFonts.jetBrainsMono(
@@ -283,6 +285,7 @@ class ThemeProvider extends ChangeNotifier {
         fontWeight: fontWeight,
         color: textColor,
         letterSpacing: 0.8,
+        height: 1.5,
       );
     }
   }

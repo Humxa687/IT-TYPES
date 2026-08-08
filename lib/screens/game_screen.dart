@@ -253,33 +253,107 @@ class _GameScreenState extends State<GameScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
               child: Center(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 900),
+                  constraints: const BoxConstraints(maxWidth: 1050),
                   child: Column(
                     children: [
-                      // Header Navigation bar (Home console layout)
+                      // Header Navigation bar (Custom minimalist it types layout)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.keyboard_alt_outlined, color: themeProvider.accentColor, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'IT TYPES',
-                                style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'it see',
+                                    style: themeProvider.getMonospaceTextStyle(fontSize: 8).copyWith(
+                                          color: themeProvider.subtextColor.withOpacity(0.5),
+                                          letterSpacing: 0.5,
+                                        ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.keyboard_alt_outlined, color: themeProvider.accentColor, size: 22),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'it types',
+                                        style: themeProvider.getHeadingStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 28),
+                              // Tiny toolbar menu icons mapping
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.keyboard_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                    tooltip: 'Reset simulator',
+                                    onPressed: () {
+                                      gameState.initGame();
+                                      _textController.clear();
+                                      _focusNode.requestFocus();
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.leaderboard_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                    tooltip: 'Dashboard & Leaderboard',
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const StatsScreen()),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.info_outline_rounded, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                    tooltip: 'Typist profile',
+                                    onPressed: () {
+                                      if (gameState.isLoggedIn) {
+                                        _showProfileDialog(context, gameState);
+                                      } else {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const AuthScreen()),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.settings_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                    tooltip: 'App settings',
+                                    onPressed: () {
+                                      _scaffoldKey.currentState?.openEndDrawer();
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                           Row(
                             children: [
-                              // Login / Account status shortcut button
+                              IconButton(
+                                icon: Icon(Icons.notifications_none_rounded, color: themeProvider.textColor.withOpacity(0.7), size: 20),
+                                tooltip: 'Notifications',
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Theme preset currently: ${themeProvider.currentTheme.name.toUpperCase()}'),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 4),
                               IconButton(
                                 icon: Icon(
                                   gameState.isLoggedIn ? Icons.account_circle_rounded : Icons.login_rounded,
-                                  color: gameState.isLoggedIn ? themeProvider.accentColor : themeProvider.textColor,
-                                  size: 22,
+                                  color: gameState.isLoggedIn ? themeProvider.accentColor : themeProvider.textColor.withOpacity(0.7),
+                                  size: 20,
                                 ),
-                                tooltip: gameState.isLoggedIn ? 'Logged in as ${gameState.userName}' : 'Sign in',
+                                tooltip: gameState.isLoggedIn ? 'Account: ${gameState.userName}' : 'Sign in',
                                 onPressed: () {
                                   if (gameState.isLoggedIn) {
                                     _showProfileDialog(context, gameState);
@@ -289,36 +363,6 @@ class _GameScreenState extends State<GameScreen> {
                                       MaterialPageRoute(builder: (context) => const AuthScreen()),
                                     );
                                   }
-                                },
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                icon: Icon(Icons.bar_chart_rounded, color: themeProvider.textColor, size: 22),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const StatsScreen()),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                icon: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 300),
-                                  child: Icon(
-                                    themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
-                                    key: ValueKey<bool>(themeProvider.isDark),
-                                    color: themeProvider.textColor,
-                                    size: 20,
-                                  ),
-                                ),
-                                onPressed: () => themeProvider.toggleTheme(),
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                icon: Icon(Icons.settings_outlined, color: themeProvider.textColor, size: 20),
-                                onPressed: () {
-                                  _scaffoldKey.currentState?.openEndDrawer();
                                 },
                               ),
                             ],
@@ -382,6 +426,22 @@ class _GameScreenState extends State<GameScreen> {
                                 },
                               ),
                               const SizedBox(height: 24),
+
+                              // Center globe language selector matching Monkeytype screenshot
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.language_rounded, color: themeProvider.subtextColor.withOpacity(0.4), size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'english',
+                                    style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
+                                          color: themeProvider.subtextColor.withOpacity(0.5),
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
 
                               // Typing Area
                               Expanded(
@@ -457,22 +517,26 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Bottom keyboard shortcut guides
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
+                      // Bottom keyboard shortcut guides (styled rounded container keycaps)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          _buildKeyCap(context, 'tab'),
+                          const SizedBox(width: 6),
                           Text(
-                            'tab - restart test',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
+                            ' - restart test',
+                            style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
                                   color: themeProvider.subtextColor.withOpacity(0.5),
                                   letterSpacing: 0.5,
                                 ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(width: 24),
+                          _buildKeyCap(context, 'esc'),
+                          const SizedBox(width: 6),
                           Text(
-                            'esc - settings drawer',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 9).copyWith(
-                                  color: themeProvider.subtextColor.withOpacity(0.35),
+                            ' - settings drawer',
+                            style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
+                                  color: themeProvider.subtextColor.withOpacity(0.5),
                                   letterSpacing: 0.5,
                                 ),
                           ),
@@ -828,6 +892,24 @@ class _GameScreenState extends State<GameScreen> {
       height: 20,
       margin: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16),
       color: themeProvider.borderColor.withOpacity(0.3),
+    );
+  }
+
+  Widget _buildKeyCap(BuildContext context, String label) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: themeProvider.cardColor,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: themeProvider.borderColor.withOpacity(0.6)),
+      ),
+      child: Text(
+        label,
+        style: themeProvider.getMonospaceTextStyle(fontSize: 8, fontWeight: FontWeight.bold).copyWith(
+              color: themeProvider.subtextColor,
+            ),
+      ),
     );
   }
 }
