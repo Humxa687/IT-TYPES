@@ -184,7 +184,6 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                           Row(
                             children: [
-                              // Career Stats Icon
                               IconButton(
                                 icon: Icon(Icons.bar_chart_rounded, color: themeProvider.textColor, size: 22),
                                 onPressed: () {
@@ -231,6 +230,9 @@ class _GameScreenState extends State<GameScreen> {
                             const SizedBox(width: 12),
                             _buildModeSelectorBlock(context, gameState),
                             const SizedBox(width: 12),
+                            _buildDifficultySelectorBlock(context, gameState),
+                            if (gameState.mode != GameMode.quote && gameState.mode != GameMode.custom)
+                              const SizedBox(width: 12),
                             _buildParameterSelectorBlock(context, gameState),
                           ],
                         ),
@@ -512,7 +514,58 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Segment 3: Parameter Selector Block
+  // Segment 3: Togglable difficulty modes cycles Easy -> Medium -> Hard -> Code
+  Widget _buildDifficultySelectorBlock(BuildContext context, GameState state) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    if (state.mode == GameMode.quote || state.mode == GameMode.custom) {
+      return const SizedBox.shrink();
+    }
+
+    final label = state.difficulty == GameDifficulty.easy
+        ? 'easy'
+        : state.difficulty == GameDifficulty.medium
+            ? 'medium'
+            : state.difficulty == GameDifficulty.hard
+                ? 'hard'
+                : 'code';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: themeProvider.borderColor.withOpacity(0.5)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: InkWell(
+        onTap: () {
+          final nextIndex = (state.difficulty.index + 1) % GameDifficulty.values.length;
+          state.setDifficulty(GameDifficulty.values[nextIndex]);
+          state.initGame();
+          _textController.clear();
+          _focusNode.requestFocus();
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            children: [
+              Icon(Icons.tune_rounded, size: 10, color: themeProvider.accentColor),
+              const SizedBox(width: 4),
+              Text(
+                'diff: $label',
+                style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
+                      color: themeProvider.accentColor,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Segment 4: Parameter Selector Block
   Widget _buildParameterSelectorBlock(BuildContext context, GameState state) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 

@@ -6,8 +6,42 @@ import '../providers/theme_provider.dart';
 import 'auth_screen.dart';
 import 'stats_screen.dart';
 
-class ResultsScreen extends StatelessWidget {
+class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
+
+  @override
+  State<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _badgeAnimController;
+  late Animation<double> _badgeScaleAnim;
+  late Animation<double> _badgeSlideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _badgeAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _badgeScaleAnim = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _badgeAnimController, curve: Curves.elasticOut),
+    );
+
+    _badgeSlideAnim = Tween<double>(begin: 80.0, end: 0.0).animate(
+      CurvedAnimation(parent: _badgeAnimController, curve: Curves.easeOutBack),
+    );
+
+    _badgeAnimController.forward();
+  }
+
+  @override
+  void dispose() {
+    _badgeAnimController.dispose();
+    super.dispose();
+  }
 
   double _calculateRawWpm(GameState state) {
     if (state.elapsedTimeSec <= 0) return 0.0;
@@ -17,7 +51,7 @@ class ResultsScreen extends StatelessWidget {
   }
 
   double _calculateConsistency(List<double> history) {
-    if (history.isEmpty || history.length < 2) return 92.0; // Realistic default
+    if (history.isEmpty || history.length < 2) return 92.0;
     final clean = history.where((v) => v > 0.0).toList();
     if (clean.length < 2) return 95.0;
 
@@ -32,6 +66,27 @@ class ResultsScreen extends StatelessWidget {
     return consistency.clamp(10.0, 100.0);
   }
 
+  String _calculateRank(GameDifficulty difficulty, int elapsedSec) {
+    if (difficulty == GameDifficulty.easy) {
+      if (elapsedSec < 6) return 'Diamond';
+      if (elapsedSec < 12) return 'Gold';
+      if (elapsedSec < 18) return 'Silver';
+      if (elapsedSec < 24) return 'Bronze';
+    } else if (difficulty == GameDifficulty.medium) {
+      if (elapsedSec < 10) return 'Diamond';
+      if (elapsedSec < 18) return 'Gold';
+      if (elapsedSec < 26) return 'Silver';
+      if (elapsedSec < 34) return 'Bronze';
+    } else {
+      // Hard or Code
+      if (elapsedSec < 15) return 'Diamond';
+      if (elapsedSec < 28) return 'Gold';
+      if (elapsedSec < 40) return 'Silver';
+      if (elapsedSec < 52) return 'Bronze';
+    }
+    return 'Unranked';
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameState = Provider.of<GameState>(context);
@@ -40,146 +95,176 @@ class ResultsScreen extends StatelessWidget {
     final rawWpm = _calculateRawWpm(gameState);
     final consistency = _calculateConsistency(gameState.wpmHistory);
     final isMobile = MediaQuery.of(context).size.width < 700;
+    
+    final rank = _calculateRank(gameState.difficulty, gameState.elapsedTimeSec);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: themeProvider.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 850),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Top navigation action row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Stack(
+        children: [
+          // Scoreboard layout content
+          Container(
+            decoration: BoxDecoration(
+              gradient: themeProvider.backgroundGradient,
+            ),
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 850),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          'IT TYPES REPORT',
-                          style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
-                                letterSpacing: 1.0,
+                        // Top navigation action row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'IT TYPES REPORT',
+                              style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
+                                    letterSpacing: 1.0,
+                                  ),
+                            ),
+                            IconButton(
+                              icon: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: Icon(
+                                  themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
+                                  key: ValueKey<bool>(themeProvider.isDark),
+                                  color: themeProvider.textColor,
+                                  size: 20,
+                                ),
                               ),
+                              onPressed: () => themeProvider.toggleTheme(),
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          icon: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            child: Icon(
-                              themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
-                              key: ValueKey<bool>(themeProvider.isDark),
-                              color: themeProvider.textColor,
-                              size: 20,
+                        const SizedBox(height: 18),
+
+                        // Glowing Animated Rank Badge Celebration Card
+                        if (rank != 'Unranked')
+                          AnimatedBuilder(
+                            animation: _badgeAnimController,
+                            builder: (context, child) {
+                              return Transform.translate(
+                                offset: Offset(0, _badgeSlideAnim.value),
+                                child: Transform.scale(
+                                  scale: _badgeScaleAnim.value,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: _buildRankBadgeCard(context, rank),
+                          ),
+                        const SizedBox(height: 24),
+
+                        // Main Scoreboard: Split columns
+                        isMobile
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildBigStatsColumn(context),
+                                  const SizedBox(height: 28),
+                                  _buildChartCard(context),
+                                ],
+                              )
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: 180,
+                                    child: _buildBigStatsColumn(context),
+                                  ),
+                                  const SizedBox(width: 32),
+                                  Expanded(
+                                    child: _buildChartCard(context),
+                                  ),
+                                ],
+                              ),
+                        const SizedBox(height: 40),
+
+                        // Details Ribbon (test type, raw, characters, consistency, time)
+                        _buildDetailsRibbon(context, rawWpm, consistency, rank),
+                        const SizedBox(height: 32),
+
+                        // Interactive Sign In / Session Save Status Banner
+                        Center(
+                          child: InkWell(
+                            onTap: gameState.isLoggedIn
+                                ? null
+                                : () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const AuthScreen()),
+                                    );
+                                  },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                              child: Text(
+                                gameState.isLoggedIn
+                                    ? 'Logged in as ${gameState.userName} (Result saved to dashboard)'
+                                    : 'Sign in to save your result',
+                                style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
+                                      color: themeProvider.subtextColor,
+                                      decoration: gameState.isLoggedIn ? TextDecoration.none : TextDecoration.underline,
+                                    ),
+                              ),
                             ),
                           ),
-                          onPressed: () => themeProvider.toggleTheme(),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 36),
+                        const SizedBox(height: 32),
 
-                    // Main Scoreboard: Split columns (large metrics on left, chart on right)
-                    isMobile
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildBigStatsColumn(context),
-                              const SizedBox(height: 28),
-                              _buildChartCard(context),
-                            ],
-                          )
-                        : Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 180,
-                                child: _buildBigStatsColumn(context),
-                              ),
-                              const SizedBox(width: 32),
-                              Expanded(
-                                child: _buildChartCard(context),
-                              ),
-                            ],
-                          ),
-                    const SizedBox(height: 40),
-
-                    // Details Ribbon (test type, raw, characters, consistency, time)
-                    _buildDetailsRibbon(context, rawWpm, consistency),
-                    const SizedBox(height: 32),
-
-                    // Interactive Sign In / Session Save Status Banner
-                    Center(
-                      child: InkWell(
-                        onTap: gameState.isLoggedIn
-                            ? null
-                            : () {
+                        // Bottom Navigation Shortcuts
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Repeat Test
+                            IconButton(
+                              icon: Icon(Icons.replay_rounded, color: themeProvider.subtextColor, size: 24),
+                              tooltip: 'Repeat Test',
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                            ),
+                            const SizedBox(width: 24),
+                            // Return Home
+                            IconButton(
+                              icon: Icon(Icons.arrow_forward_rounded, color: themeProvider.accentColor, size: 28),
+                              tooltip: 'Next Test',
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                            ),
+                            const SizedBox(width: 24),
+                            // Career Stats Screen
+                            IconButton(
+                              icon: Icon(Icons.bar_chart_rounded, color: themeProvider.subtextColor, size: 24),
+                              tooltip: 'Career Performance logs',
+                              onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const AuthScreen()),
+                                  MaterialPageRoute(builder: (context) => const StatsScreen()),
                                 );
                               },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                          child: Text(
-                            gameState.isLoggedIn
-                                ? 'Logged in as ${gameState.userName} (Result saved to dashboard)'
-                                : 'Sign in to save your result',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
-                                  color: themeProvider.subtextColor,
-                                  decoration: gameState.isLoggedIn ? TextDecoration.none : TextDecoration.underline,
-                                ),
-                          ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Bottom Navigation Shortcuts
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Repeat Test
-                        IconButton(
-                          icon: Icon(Icons.replay_rounded, color: themeProvider.subtextColor, size: 24),
-                          tooltip: 'Repeat Test',
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        const SizedBox(width: 24),
-                        // Return Home
-                        IconButton(
-                          icon: Icon(Icons.arrow_forward_rounded, color: themeProvider.accentColor, size: 28),
-                          tooltip: 'Next Test',
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        const SizedBox(width: 24),
-                        // Career Stats Screen
-                        IconButton(
-                          icon: Icon(Icons.bar_chart_rounded, color: themeProvider.subtextColor, size: 24),
-                          tooltip: 'Career Performance logs',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const StatsScreen()),
-                            );
-                          },
-                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+
+          // Particle Confetti overlay
+          if (rank != 'Unranked')
+            const IgnorePointer(
+              child: ConfettiCelebration(),
+            ),
+        ],
       ),
     );
   }
@@ -281,7 +366,79 @@ class ResultsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailsRibbon(BuildContext context, double rawWpm, double consistency) {
+  Widget _buildRankBadgeCard(BuildContext context, String rank) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    Color glowColor;
+    String badgeEmoji;
+    String rankName;
+
+    if (rank == 'Diamond') {
+      glowColor = const Color(0xFF00E5FF);
+      badgeEmoji = '💎';
+      rankName = 'DIAMOND TYPIST';
+    } else if (rank == 'Gold') {
+      glowColor = const Color(0xFFFFC107);
+      badgeEmoji = '🥇';
+      rankName = 'GOLD TYPIST';
+    } else if (rank == 'Silver') {
+      glowColor = const Color(0xFF90A4AE);
+      badgeEmoji = '🥈';
+      rankName = 'SILVER TYPIST';
+    } else {
+      glowColor = const Color(0xFFFF7043);
+      badgeEmoji = '🥉';
+      rankName = 'BRONZE TYPIST';
+    }
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+        decoration: BoxDecoration(
+          color: themeProvider.cardColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: glowColor, width: 2.0),
+          boxShadow: [
+            BoxShadow(
+              color: glowColor.withOpacity(0.2),
+              blurRadius: 18,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(badgeEmoji, style: const TextStyle(fontSize: 26)),
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'ACHIEVEMENT UNLOCKED',
+                  style: themeProvider.getMonospaceTextStyle(fontSize: 9, fontWeight: FontWeight.bold).copyWith(
+                        color: themeProvider.subtextColor,
+                        letterSpacing: 1.0,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  rankName,
+                  style: themeProvider.getHeadingStyle(fontSize: 16, fontWeight: FontWeight.bold).copyWith(
+                        color: glowColor,
+                        letterSpacing: 0.8,
+                      ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailsRibbon(BuildContext context, double rawWpm, double consistency, String rank) {
     final gameState = Provider.of<GameState>(context, listen: false);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
@@ -304,7 +461,7 @@ class ResultsScreen extends StatelessWidget {
           _ribbonTile(context, 'raw wpm', rawWpm.toStringAsFixed(0)),
           _ribbonTile(context, 'characters', '${gameState.correctKeys}/${gameState.incorrectKeys}/0/0'),
           _ribbonTile(context, 'consistency', '${consistency.toStringAsFixed(0)}%'),
-          _ribbonTile(context, 'time', '${gameState.elapsedTimeSec}s'),
+          _ribbonTile(context, 'rank badge', rank),
         ],
       ),
     );
@@ -339,6 +496,133 @@ class ResultsScreen extends StatelessWidget {
       ],
     );
   }
+}
+
+// Particle details model
+class ConfettiParticle {
+  double x, y, size, vx, vy, rotation, vr;
+  Color color;
+  bool isSquare;
+
+  ConfettiParticle({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.color,
+    required this.vx,
+    required this.vy,
+    required this.rotation,
+    required this.vr,
+    required this.isSquare,
+  });
+
+  void update() {
+    x += vx;
+    y += vy;
+    rotation += vr;
+  }
+}
+
+// Stateful high-performance particle confetti overlays
+class ConfettiCelebration extends StatefulWidget {
+  const ConfettiCelebration({super.key});
+
+  @override
+  State<ConfettiCelebration> createState() => _ConfettiCelebrationState();
+}
+
+class _ConfettiCelebrationState extends State<ConfettiCelebration> with SingleTickerProviderStateMixin {
+  late AnimationController _particleController;
+  final List<ConfettiParticle> _particles = [];
+  final Random _rand = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _particleController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..addListener(() {
+        setState(() {
+          for (var p in _particles) {
+            p.update();
+          }
+        });
+      });
+
+    // Color choices
+    final colors = [
+      const Color(0xFF00E5FF),
+      const Color(0xFFFFC107),
+      const Color(0xFFEF5350),
+      const Color(0xFF66BB6A),
+      const Color(0xFFAB47BC),
+      const Color(0xFF29B6F6),
+    ];
+
+    // Spawn 90 particles
+    for (int i = 0; i < 90; i++) {
+      _particles.add(ConfettiParticle(
+        x: _rand.nextDouble() * 800,
+        y: -30 - _rand.nextDouble() * 400,
+        size: 5.0 + _rand.nextDouble() * 7.0,
+        color: colors[_rand.nextInt(colors.length)],
+        vx: -2.5 + _rand.nextDouble() * 5.0,
+        vy: 2.5 + _rand.nextDouble() * 4.5,
+        rotation: _rand.nextDouble() * pi,
+        vr: -0.08 + _rand.nextDouble() * 0.16,
+        isSquare: _rand.nextBool(),
+      ));
+    }
+
+    _particleController.forward();
+  }
+
+  @override
+  void dispose() {
+    _particleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size.infinite,
+      painter: ConfettiPainter(particles: _particles),
+    );
+  }
+}
+
+class ConfettiPainter extends CustomPainter {
+  final List<ConfettiParticle> particles;
+
+  ConfettiPainter({required this.particles});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var p in particles) {
+      if (p.x < 0 || p.x > size.width || p.y > size.height) continue;
+
+      final paint = Paint()
+        ..color = p.color
+        ..style = PaintingStyle.fill;
+
+      canvas.save();
+      canvas.translate(p.x, p.y);
+      canvas.rotate(p.rotation);
+
+      if (p.isSquare) {
+        canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size), paint);
+      } else {
+        canvas.drawCircle(Offset.zero, p.size / 2, paint);
+      }
+
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ConfettiPainter oldDelegate) => true;
 }
 
 // Custom Painter to render a smooth line chart showing typing progress over time
