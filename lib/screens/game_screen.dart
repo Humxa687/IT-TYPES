@@ -388,12 +388,14 @@ class _GameScreenState extends State<GameScreen> {
                                 child: Stack(
                                   children: [
                                     Positioned.fill(
-                                      child: SingleChildScrollView(
-                                        physics: const BouncingScrollPhysics(),
-                                        child: TypingTextDisplay(
-                                          targetText: gameState.targetText,
-                                          typedText: gameState.typedText,
-                                          cursorIndex: gameState.typedText.length,
+                                      child: Center(
+                                        child: SingleChildScrollView(
+                                          physics: const BouncingScrollPhysics(),
+                                          child: TypingTextDisplay(
+                                            targetText: gameState.targetText,
+                                            typedText: gameState.typedText,
+                                            cursorIndex: gameState.typedText.length,
+                                          ),
                                         ),
                                       ),
                                     ),
