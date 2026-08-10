@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 import '../providers/game_state.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/typing_text_display.dart';
 import '../widgets/virtual_keyboard.dart';
 import '../widgets/settings_drawer.dart';
+import '../widgets/circular_gauge.dart';
 import 'auth_screen.dart';
 import 'results_screen.dart';
 import 'stats_screen.dart';
@@ -235,6 +237,7 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     final gameState = Provider.of<GameState>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -243,73 +246,159 @@ class _GameScreenState extends State<GameScreen> {
         decoration: BoxDecoration(
           gradient: themeProvider.backgroundGradient,
         ),
-        child: SafeArea(
-          child: GestureDetector(
-            onTap: () {
-              _focusNode.requestFocus();
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 1050),
-                  child: Column(
-                    children: [
-                      // Header Navigation bar (Custom minimalist it types layout)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Stack(
+          children: [
+            // Ambient glowing mesh background aura 1
+            Positioned(
+              top: -100,
+              left: -100,
+              child: Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: themeProvider.accentColor.withOpacity(0.08),
+                ),
+                child: ClipOval(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
+                    child: Container(color: Colors.transparent),
+                  ),
+                ),
+              ),
+            ),
+            // Ambient glowing mesh background aura 2
+            Positioned(
+              bottom: -150,
+              right: -100,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: themeProvider.accentColor.withOpacity(0.05),
+                ),
+                child: ClipOval(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 140, sigmaY: 140),
+                    child: Container(color: Colors.transparent),
+                  ),
+                ),
+              ),
+            ),
+
+            // Main UI Layout foreground
+            SafeArea(
+              child: GestureDetector(
+                onTap: () {
+                  _focusNode.requestFocus();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                  child: Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 1050),
+                      child: Column(
                         children: [
+                          // Header Navigation bar (Custom minimalist it types layout)
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Row(
                                 children: [
-                                  Text(
-                                    'it see',
-                                    style: themeProvider.getMonospaceTextStyle(fontSize: 8).copyWith(
-                                          color: themeProvider.subtextColor.withOpacity(0.5),
-                                          letterSpacing: 0.5,
-                                        ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'it see',
+                                        style: themeProvider.getMonospaceTextStyle(fontSize: 8).copyWith(
+                                              color: themeProvider.subtextColor.withOpacity(0.5),
+                                              letterSpacing: 0.5,
+                                            ),
+                                      ),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.keyboard_alt_outlined, color: themeProvider.accentColor, size: 22),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'it types',
+                                            style: themeProvider.getHeadingStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
+                                  const SizedBox(width: 28),
+                                  // Tiny toolbar menu icons mapping
                                   Row(
                                     children: [
-                                      Icon(Icons.keyboard_alt_outlined, color: themeProvider.accentColor, size: 22),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'it types',
-                                        style: themeProvider.getHeadingStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                      IconButton(
+                                        icon: Icon(Icons.keyboard_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                        tooltip: 'Reset simulator',
+                                        onPressed: () {
+                                          gameState.initGame();
+                                          _textController.clear();
+                                          _focusNode.requestFocus();
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.leaderboard_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                        tooltip: 'Dashboard & Leaderboard',
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const StatsScreen()),
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.info_outline_rounded, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                        tooltip: 'Typist profile',
+                                        onPressed: () {
+                                          if (gameState.isLoggedIn) {
+                                            _showProfileDialog(context, gameState);
+                                          } else {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(builder: (context) => const AuthScreen()),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.settings_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
+                                        tooltip: 'App settings',
+                                        onPressed: () {
+                                          _scaffoldKey.currentState?.openEndDrawer();
+                                        },
                                       ),
                                     ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: 28),
-                              // Tiny toolbar menu icons mapping
                               Row(
                                 children: [
                                   IconButton(
-                                    icon: Icon(Icons.keyboard_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
-                                    tooltip: 'Reset simulator',
+                                    icon: Icon(Icons.notifications_none_rounded, color: themeProvider.textColor.withOpacity(0.7), size: 20),
+                                    tooltip: 'Notifications',
                                     onPressed: () {
-                                      gameState.initGame();
-                                      _textController.clear();
-                                      _focusNode.requestFocus();
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.leaderboard_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
-                                    tooltip: 'Dashboard & Leaderboard',
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => const StatsScreen()),
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Theme preset currently: ${themeProvider.currentTheme.name.toUpperCase()}'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
                                       );
                                     },
                                   ),
+                                  const SizedBox(width: 4),
                                   IconButton(
-                                    icon: Icon(Icons.info_outline_rounded, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
-                                    tooltip: 'Typist profile',
+                                    icon: Icon(
+                                      gameState.isLoggedIn ? Icons.account_circle_rounded : Icons.login_rounded,
+                                      color: gameState.isLoggedIn ? themeProvider.accentColor : themeProvider.textColor.withOpacity(0.7),
+                                      size: 20,
+                                    ),
+                                    tooltip: gameState.isLoggedIn ? 'Account: ${gameState.userName}' : 'Sign in',
                                     onPressed: () {
                                       if (gameState.isLoggedIn) {
                                         _showProfileDialog(context, gameState);
@@ -321,234 +410,224 @@ class _GameScreenState extends State<GameScreen> {
                                       }
                                     },
                                   ),
-                                  IconButton(
-                                    icon: Icon(Icons.settings_outlined, color: themeProvider.subtextColor.withOpacity(0.7), size: 16),
-                                    tooltip: 'App settings',
-                                    onPressed: () {
-                                      _scaffoldKey.currentState?.openEndDrawer();
-                                    },
-                                  ),
                                 ],
                               ),
                             ],
                           ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.notifications_none_rounded, color: themeProvider.textColor.withOpacity(0.7), size: 20),
-                                tooltip: 'Notifications',
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Theme preset currently: ${themeProvider.currentTheme.name.toUpperCase()}'),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                icon: Icon(
-                                  gameState.isLoggedIn ? Icons.account_circle_rounded : Icons.login_rounded,
-                                  color: gameState.isLoggedIn ? themeProvider.accentColor : themeProvider.textColor.withOpacity(0.7),
-                                  size: 20,
+                          const SizedBox(height: 16),
+
+                          // Monkeytype Configuration Segment Ribbon
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildPunctuationNumbersBlock(context, gameState),
+                                const SizedBox(width: 12),
+                                _buildModeSelectorBlock(context, gameState),
+                                const SizedBox(width: 12),
+                                _buildDifficultySelectorBlock(context, gameState),
+                                if (gameState.mode != GameMode.quote && gameState.mode != GameMode.custom)
+                                  const SizedBox(width: 12),
+                                _buildParameterSelectorBlock(context, gameState),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Main centered typing container (Premium Glassmorphism Dashboard Panel)
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              decoration: BoxDecoration(
+                                color: themeProvider.cardColor.withOpacity(0.35),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: themeProvider.borderColor.withOpacity(0.25),
+                                  width: 1.5,
                                 ),
-                                tooltip: gameState.isLoggedIn ? 'Account: ${gameState.userName}' : 'Sign in',
-                                onPressed: () {
-                                  if (gameState.isLoggedIn) {
-                                    _showProfileDialog(context, gameState);
-                                  } else {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const AuthScreen()),
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Monkeytype Configuration Segment Ribbon
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildPunctuationNumbersBlock(context, gameState),
-                            const SizedBox(width: 12),
-                            _buildModeSelectorBlock(context, gameState),
-                            const SizedBox(width: 12),
-                            _buildDifficultySelectorBlock(context, gameState),
-                            if (gameState.mode != GameMode.quote && gameState.mode != GameMode.custom)
-                              const SizedBox(width: 12),
-                            _buildParameterSelectorBlock(context, gameState),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Main centered typing container (Cardless, floating layout matching Monkeytype)
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Sleek Minimalist Stats & Sizing Ribbon
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final isMobileWidth = MediaQuery.of(context).size.width < 600;
-                                  if (isMobileWidth) {
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        _buildMinimalStatsRibbon(context),
-                                        const SizedBox(height: 10),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: _buildFontSizeSelector(context),
-                                        ),
-                                      ],
-                                    );
-                                  } else {
-                                    return Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(child: _buildMinimalStatsRibbon(context)),
-                                        _buildFontSizeSelector(context),
-                                      ],
-                                    );
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Center globe language selector matching Monkeytype screenshot
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.language_rounded, color: themeProvider.subtextColor.withOpacity(0.4), size: 14),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'english',
-                                    style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
-                                          color: themeProvider.subtextColor.withOpacity(0.5),
-                                        ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: themeProvider.accentColor.withOpacity(0.04),
+                                    blurRadius: 30,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 10),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 18),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Sleek Minimalist Stats, Speedometer & Sizing Ribbon
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final isMobileWidth = MediaQuery.of(context).size.width < 600;
+                                          if (isMobileWidth) {
+                                            return Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                _buildMinimalStatsRibbon(context),
+                                                const SizedBox(height: 10),
+                                                Align(
+                                                  alignment: Alignment.centerRight,
+                                                  child: _buildFontSizeSelector(context),
+                                                ),
+                                              ],
+                                            );
+                                          } else {
+                                            return Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                // Realtime WPM speedometer dial
+                                                CircularGauge(
+                                                  value: gameState.wpm,
+                                                  maxValue: 120,
+                                                  label: 'LIVE WPM',
+                                                  color: themeProvider.accentColor,
+                                                  trackColor: themeProvider.borderColor.withOpacity(0.2),
+                                                  textColor: themeProvider.textColor,
+                                                ),
+                                                const SizedBox(width: 24),
+                                                Expanded(child: _buildMinimalStatsRibbon(context)),
+                                                _buildFontSizeSelector(context),
+                                              ],
+                                            );
+                                          }
+                                        },
+                                      ),
+                                      const SizedBox(height: 24),
 
-                              // Typing Area
-                              Expanded(
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Center(
-                                        child: SingleChildScrollView(
-                                          physics: const BouncingScrollPhysics(),
-                                          child: TypingTextDisplay(
-                                            targetText: gameState.targetText,
-                                            typedText: gameState.typedText,
-                                            cursorIndex: gameState.typedText.length,
+                                      // Center globe language selector matching Monkeytype screenshot
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.language_rounded, color: themeProvider.subtextColor.withOpacity(0.4), size: 14),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'english',
+                                            style: themeProvider.getMonospaceTextStyle(fontSize: 11).copyWith(
+                                                  color: themeProvider.subtextColor.withOpacity(0.5),
+                                                ),
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    ),
-                                    Opacity(
-                                      opacity: 0.0,
-                                      child: TextField(
-                                        controller: _textController,
-                                        focusNode: _focusNode,
-                                        autocorrect: false,
-                                        enableSuggestions: false,
-                                        enableIMEPersonalizedLearning: false,
-                                        keyboardType: TextInputType.visiblePassword,
-                                        maxLines: null,
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                        ),
-                                      ),
-                                    ),
-                                    if (!_focusNode.hasFocus)
-                                      Positioned.fill(
-                                        child: Container(
-                                          color: themeProvider.backgroundColor.withOpacity(0.9),
-                                          child: Center(
-                                            child: Text(
-                                              'CLICK OR TAP HERE TO START TYPING',
-                                              textAlign: TextAlign.center,
-                                              style: themeProvider.getMonospaceTextStyle(fontSize: 15, fontWeight: FontWeight.bold).copyWith(
-                                                    color: themeProvider.accentColor,
-                                                    letterSpacing: 1.2,
+                                      const SizedBox(height: 18),
+
+                                      // Typing Area
+                                      Expanded(
+                                        child: Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: Center(
+                                                child: SingleChildScrollView(
+                                                  physics: const BouncingScrollPhysics(),
+                                                  child: TypingTextDisplay(
+                                                    targetText: gameState.targetText,
+                                                    typedText: gameState.typedText,
+                                                    cursorIndex: gameState.typedText.length,
                                                   ),
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            Opacity(
+                                              opacity: 0.0,
+                                              child: TextField(
+                                                controller: _textController,
+                                                focusNode: _focusNode,
+                                                autocorrect: false,
+                                                enableSuggestions: false,
+                                                enableIMEPersonalizedLearning: false,
+                                                keyboardType: TextInputType.visiblePassword,
+                                                maxLines: null,
+                                                decoration: const InputDecoration(
+                                                  border: InputBorder.none,
+                                                ),
+                                              ),
+                                            ),
+                                            if (!_focusNode.hasFocus)
+                                              Positioned.fill(
+                                                child: Container(
+                                                  color: themeProvider.backgroundColor.withOpacity(0.9),
+                                                  child: Center(
+                                                    child: Text(
+                                                      'CLICK OR TAP HERE TO START TYPING',
+                                                      textAlign: TextAlign.center,
+                                                      style: themeProvider.getMonospaceTextStyle(fontSize: 15, fontWeight: FontWeight.bold).copyWith(
+                                                            color: themeProvider.accentColor,
+                                                            letterSpacing: 1.2,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
-                                  ],
+                                      const SizedBox(height: 16),
+
+                                      // Central Restart Button
+                                      Center(
+                                        child: IconButton(
+                                          icon: Icon(Icons.refresh_rounded, color: themeProvider.subtextColor.withOpacity(0.7), size: 28),
+                                          tooltip: 'Restart Test',
+                                          onPressed: () {
+                                            gameState.initGame();
+                                            _textController.clear();
+                                            _focusNode.requestFocus();
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // On-screen Virtual Keyboard Overlay (Only visible on non-mobile viewports)
+                                      const VirtualKeyboard(),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
 
-                              // Central Restart Button
-                              Center(
-                                child: IconButton(
-                                  icon: Icon(Icons.refresh_rounded, color: themeProvider.subtextColor.withOpacity(0.7), size: 28),
-                                  tooltip: 'Restart Test',
-                                  onPressed: () {
-                                    gameState.initGame();
-                                    _textController.clear();
-                                    _focusNode.requestFocus();
-                                  },
-                                ),
+                          // Bottom keyboard shortcut guides (styled rounded container keycaps)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildKeyCap(context, 'tab'),
+                              const SizedBox(width: 6),
+                              Text(
+                                ' - restart test',
+                                style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
+                                      color: themeProvider.subtextColor.withOpacity(0.5),
+                                      letterSpacing: 0.5,
+                                    ),
                               ),
-                              const SizedBox(height: 12),
-
-                              // On-screen Virtual Keyboard Overlay (Only visible on non-mobile viewports)
-                              const VirtualKeyboard(),
+                              const SizedBox(width: 24),
+                              _buildKeyCap(context, 'esc'),
+                              const SizedBox(width: 6),
+                              Text(
+                                ' - settings drawer',
+                                style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
+                                      color: themeProvider.subtextColor.withOpacity(0.5),
+                                      letterSpacing: 0.5,
+                                    ),
+                              ),
                             ],
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Bottom keyboard shortcut guides (styled rounded container keycaps)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildKeyCap(context, 'tab'),
-                          const SizedBox(width: 6),
-                          Text(
-                            ' - restart test',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
-                                  color: themeProvider.subtextColor.withOpacity(0.5),
-                                  letterSpacing: 0.5,
-                                ),
-                          ),
-                          const SizedBox(width: 24),
-                          _buildKeyCap(context, 'esc'),
-                          const SizedBox(width: 6),
-                          Text(
-                            ' - settings drawer',
-                            style: themeProvider.getMonospaceTextStyle(fontSize: 10).copyWith(
-                                  color: themeProvider.subtextColor.withOpacity(0.5),
-                                  letterSpacing: 0.5,
-                                ),
-                          ),
+                          const SizedBox(height: 12),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -826,30 +905,34 @@ class _GameScreenState extends State<GameScreen> {
                 ? 'TIME LEFT'
                 : 'TYPED';
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        _ribbonTile(
-          context,
-          '${gameState.wpm.toStringAsFixed(0)}',
-          'WPM',
-          themeProvider.accentColor,
-        ),
-        _verticalDivider(context),
-        _ribbonTile(
-          context,
-          '${gameState.accuracy.toStringAsFixed(0)}%',
-          'ACCURACY',
-          themeProvider.correctCharColor,
-        ),
-        _verticalDivider(context),
-        _ribbonTile(
-          context,
-          timeLabel,
-          timeTitle,
-          themeProvider.textColor,
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          _ribbonTile(
+            context,
+            '${gameState.wpm.toStringAsFixed(0)}',
+            'WPM',
+            themeProvider.accentColor,
+          ),
+          _verticalDivider(context),
+          _ribbonTile(
+            context,
+            '${gameState.accuracy.toStringAsFixed(0)}%',
+            'ACCURACY',
+            themeProvider.correctCharColor,
+          ),
+          _verticalDivider(context),
+          _ribbonTile(
+            context,
+            timeLabel,
+            timeTitle,
+            themeProvider.textColor,
+          ),
+        ],
+      ),
     );
   }
 
@@ -942,47 +1025,49 @@ class _HoverOptionTextState extends State<HoverOptionText> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    Color color = widget.isSelected
-        ? themeProvider.accentColor
-        : _isHovered
-            ? themeProvider.textColor
-            : themeProvider.subtextColor;
+    // Dynamic coloring based on selection and mouse cursor hover states
+    Color displayColor = themeProvider.subtextColor.withOpacity(0.6);
+    if (widget.isSelected) {
+      displayColor = themeProvider.accentColor;
+    } else if (_isHovered) {
+      displayColor = themeProvider.textColor;
+    }
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: InkWell(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
         onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? themeProvider.accentColor.withOpacity(0.08)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(
-                  widget.icon!,
-                  size: 13,
-                  color: color,
-                ),
+                Icon(widget.icon, size: 13, color: displayColor),
                 const SizedBox(width: 4),
-              ],
-              if (widget.prefix != null) ...[
+              ] else if (widget.prefix != null) ...[
                 Text(
                   widget.prefix!,
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+                  style: themeProvider.getMonospaceTextStyle(fontSize: 13).copyWith(
+                        color: displayColor,
+                        fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
                 ),
-                const SizedBox(width: 3),
+                const SizedBox(width: 2),
               ],
               Text(
                 widget.text,
                 style: themeProvider.getMonospaceTextStyle(fontSize: 12).copyWith(
-                      color: color,
+                      color: displayColor,
                       fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
               ),

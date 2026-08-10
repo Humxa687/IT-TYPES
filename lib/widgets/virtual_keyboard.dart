@@ -73,7 +73,7 @@ class VirtualKeyboard extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: isActive
-            ? themeProvider.accentColor.withOpacity(0.35)
+            ? themeProvider.accentColor.withOpacity(0.45)
             : themeProvider.cardColor.withOpacity(0.2),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
@@ -83,9 +83,9 @@ class VirtualKeyboard extends StatelessWidget {
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: themeProvider.accentColor.withOpacity(0.4),
-                  blurRadius: 10,
-                  spreadRadius: 1,
+                  color: themeProvider.accentColor.withOpacity(0.65),
+                  blurRadius: 14,
+                  spreadRadius: 2,
                 )
               ]
             : null,
