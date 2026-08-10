@@ -134,7 +134,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
               child: SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 850),
                       child: Column(
@@ -164,7 +164,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 8),
 
                           // Glowing Animated Rank Badge Celebration Card
                           if (rank != 'Unranked')
@@ -181,7 +181,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                               },
                               child: _buildRankBadgeCard(context, rank),
                             ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 12),
 
                           // Main Scoreboard: Split columns
                           isMobile
@@ -189,7 +189,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     _buildBigStatsColumn(context),
-                                    const SizedBox(height: 28),
+                                    const SizedBox(height: 18),
                                     _buildChartCard(context),
                                   ],
                                 )
@@ -206,11 +206,11 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                     ),
                                   ],
                                 ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 16),
 
                           // Details Ribbon (test type, raw, characters, consistency, time)
                           _buildDetailsRibbon(context, rawWpm, consistency, rank),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 12),
 
                           // Interactive Sign In / Session Save Status Banner
                           Center(
@@ -238,7 +238,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                               ),
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 12),
 
                           // Bottom Navigation Shortcuts
                           Row(
