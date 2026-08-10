@@ -311,7 +311,7 @@ class _GameScreenState extends State<GameScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'it see',
+                                        'developed by humza',
                                         style: themeProvider.getMonospaceTextStyle(fontSize: 8).copyWith(
                                               color: themeProvider.subtextColor.withOpacity(0.5),
                                               letterSpacing: 0.5,
