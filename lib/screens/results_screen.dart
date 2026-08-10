@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import 'dart:math';
 import '../providers/game_state.dart';
 import '../providers/theme_provider.dart';
@@ -112,11 +113,10 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       onKeyEvent: (node, event) {
         final eventStr = event.runtimeType.toString();
         if (eventStr.contains('Down')) {
-          final key = event.logicalKey.keyLabel.toLowerCase();
-          if (key == 'r') {
+          if (event.logicalKey == LogicalKeyboardKey.keyR) {
             Navigator.pop(context);
             return KeyEventResult.handled;
-          } else if (key == 'n') {
+          } else if (event.logicalKey == LogicalKeyboardKey.keyN) {
             Navigator.pop(context);
             return KeyEventResult.handled;
           }
