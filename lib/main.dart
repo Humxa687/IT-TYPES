@@ -17,6 +17,14 @@ void main() {
   );
 }
 
+class MyCustomScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+    // Return the child directly without wrapping in a scrollbar, hiding all scrollbars globally
+    return child;
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -27,6 +35,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'IT TYPES',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: MyCustomScrollBehavior(),
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark, // Default base brightness
